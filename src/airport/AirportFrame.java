@@ -4,6 +4,15 @@
  */
 package airport;
 
+import controller.LocationController;
+import controller.PlaneController;
+import controller.FlightController;
+import controller.PassengerController;
+import service.FlightService;
+import dataTransfer.PassengerDTO;
+import dataTransfer.FlightDTO;
+import dataTransfer.LocationDTO;
+import dataTransfer.PlaneDTO;
 import com.formdev.flatlaf.FlatDarkLaf;
 import java.awt.Color;
 import java.time.LocalDate;
@@ -11,6 +20,14 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import javax.swing.UIManager;
 import javax.swing.table.DefaultTableModel;
+import loader.DataLoader;
+import model.Flight;
+import model.Location;
+import model.Passenger;
+import model.Plane;
+import service.LocationService;
+import service.PassengerService;
+import service.PlaneService;
 
 /**
  *
@@ -22,18 +39,33 @@ public class AirportFrame extends javax.swing.JFrame {
      * Creates new form AirportFrame
      */
     private int x, y;
-    private ArrayList<Passenger> passengers;
-    private ArrayList<Plane> planes;
-    private ArrayList<Location> locations;
-    private ArrayList<Flight> flights;
+    private PassengerController passengerController;
+    private PlaneController planeController;
+    private LocationController locationController;
+    private FlightController flightController;
+    private FlightService flightService;
+    private PassengerService passengerService;
+    private LocationService locationService;
+    private PlaneService planeService;
 
     public AirportFrame() {
         initComponents();
 
-        this.passengers = new ArrayList<>();
-        this.planes = new ArrayList<>();
-        this.locations = new ArrayList<>();
-        this.flights = new ArrayList<>();
+        ArrayList<Location> locations = DataLoader.loadLocations();
+        ArrayList<Plane> planes = DataLoader.loadPlanes();
+        ArrayList<Flight> flights = DataLoader.loadFlights(locations, planes);
+        ArrayList<Passenger> passengers = DataLoader.loadPassengers();
+
+        locationService = new LocationService(locations);
+        locationController = new LocationController(locationService);
+
+        planeService = new PlaneService(planes);
+        planeController = new PlaneController(planeService);
+
+        flightService = new FlightService(planeController.getService(), locationController.getService(), flights);
+        passengerService = new PassengerService(flightService, locationController.getService(), planeController.getService(), passengers);
+        passengerController = new PassengerController(passengerService);
+        flightController = new FlightController(flightService);
 
         this.setBackground(new Color(0, 0, 0, 0));
         this.setLocationRelativeTo(null);
@@ -43,48 +75,67 @@ public class AirportFrame extends javax.swing.JFrame {
         this.generateHours();
         this.generateMinutes();
         this.blockPanels();
+        fillPassengerComboBox();
+        fillFlightToAddComboBox();
+    }
+
+    private void fillPassengerComboBox() {
+        userSelect.removeAllItems();
+        userSelect.addItem("Seleccione un pasajero.");
+
+        for (PassengerDTO p : passengerController.getAllPassengers()) {
+            userSelect.addItem(p.getId() + "");
+        }
+    }
+
+    private void fillFlightToAddComboBox() {
+        FlightToAdd.removeAllItems();                    
+        FlightToAdd.addItem("Seleccione un vuelo.");  
+        for (FlightDTO flight : flightController.getAllFlight()) {
+            FlightToAdd.addItem(flight.getId());  
+        }
     }
 
     private void blockPanels() {
         //9, 11
-        for (int i = 1; i < jTabbedPane1.getTabCount(); i++) {
+        for (int i = 1; i < GeneralPanel.getTabCount(); i++) {
             if (i != 9 && i != 11) {
-                jTabbedPane1.setEnabledAt(i, false);
+                GeneralPanel.setEnabledAt(i, false);
             }
         }
     }
 
     private void generateMonths() {
         for (int i = 1; i < 13; i++) {
-            MONTH.addItem("" + i);
-            MONTH1.addItem("" + i);
-            MONTH5.addItem("" + i);
+            PassengerBaseBirthdateMonth.addItem("" + i);
+            DepartureDateMonth.addItem("" + i);
+            PassengerBirthdateMonth.addItem("" + i);
         }
     }
 
     private void generateDays() {
         for (int i = 1; i < 32; i++) {
-            DAY.addItem("" + i);
-            DAY1.addItem("" + i);
-            DAY5.addItem("" + i);
+            PassengerBaseBirthdateDay.addItem("" + i);
+            DepartureDateDay.addItem("" + i);
+            PassengerBirthdateDay.addItem("" + i);
         }
     }
 
     private void generateHours() {
         for (int i = 0; i < 24; i++) {
-            MONTH2.addItem("" + i);
-            MONTH3.addItem("" + i);
-            MONTH4.addItem("" + i);
-            jComboBox6.addItem("" + i);
+            DepartureDateHour.addItem("" + i);
+            ArrivalLocationHour.addItem("" + i);
+            ScaleLocationHour.addItem("" + i);
+            HourDelay.addItem("" + i);
         }
     }
 
     private void generateMinutes() {
         for (int i = 0; i < 60; i++) {
-            DAY2.addItem("" + i);
-            DAY3.addItem("" + i);
-            DAY4.addItem("" + i);
-            jComboBox8.addItem("" + i);
+            DepartureDateMinute.addItem("" + i);
+            ArrivalLocationMinute.addItem("" + i);
+            ScaleLocationMinute.addItem("" + i);
+            MinutesDelay.addItem("" + i);
         }
     }
 
@@ -98,144 +149,144 @@ public class AirportFrame extends javax.swing.JFrame {
     private void initComponents() {
 
         panelRound1 = new airport.PanelRound();
-        panelRound2 = new airport.PanelRound();
-        jButton13 = new javax.swing.JButton();
-        jTabbedPane1 = new javax.swing.JTabbedPane();
-        jPanel1 = new javax.swing.JPanel();
+        TopPanel = new airport.PanelRound();
+        ExitBtn = new javax.swing.JButton();
+        GeneralPanel = new javax.swing.JTabbedPane();
+        SelectionPanel = new javax.swing.JPanel();
         user = new javax.swing.JRadioButton();
         administrator = new javax.swing.JRadioButton();
         userSelect = new javax.swing.JComboBox<>();
-        jPanel2 = new javax.swing.JPanel();
-        jLabel1 = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
-        jLabel3 = new javax.swing.JLabel();
-        jLabel4 = new javax.swing.JLabel();
-        jLabel5 = new javax.swing.JLabel();
-        jLabel6 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
-        jTextField2 = new javax.swing.JTextField();
-        jTextField3 = new javax.swing.JTextField();
-        jTextField4 = new javax.swing.JTextField();
-        jTextField5 = new javax.swing.JTextField();
-        jLabel7 = new javax.swing.JLabel();
-        jLabel8 = new javax.swing.JLabel();
-        jTextField6 = new javax.swing.JTextField();
-        jLabel9 = new javax.swing.JLabel();
-        MONTH = new javax.swing.JComboBox<>();
-        jTextField7 = new javax.swing.JTextField();
-        jLabel10 = new javax.swing.JLabel();
-        DAY = new javax.swing.JComboBox<>();
-        jButton8 = new javax.swing.JButton();
-        jPanel3 = new javax.swing.JPanel();
-        jLabel11 = new javax.swing.JLabel();
-        jTextField8 = new javax.swing.JTextField();
-        jLabel12 = new javax.swing.JLabel();
-        jTextField9 = new javax.swing.JTextField();
-        jTextField10 = new javax.swing.JTextField();
-        jLabel13 = new javax.swing.JLabel();
-        jTextField11 = new javax.swing.JTextField();
-        jLabel14 = new javax.swing.JLabel();
-        jTextField12 = new javax.swing.JTextField();
-        jLabel15 = new javax.swing.JLabel();
-        jButton9 = new javax.swing.JButton();
-        jPanel13 = new javax.swing.JPanel();
-        jLabel16 = new javax.swing.JLabel();
-        jTextField13 = new javax.swing.JTextField();
-        jLabel17 = new javax.swing.JLabel();
-        jTextField14 = new javax.swing.JTextField();
-        jTextField15 = new javax.swing.JTextField();
-        jLabel18 = new javax.swing.JLabel();
-        jLabel19 = new javax.swing.JLabel();
-        jTextField16 = new javax.swing.JTextField();
-        jTextField17 = new javax.swing.JTextField();
-        jLabel20 = new javax.swing.JLabel();
-        jLabel21 = new javax.swing.JLabel();
-        jTextField18 = new javax.swing.JTextField();
-        jButton10 = new javax.swing.JButton();
-        jPanel4 = new javax.swing.JPanel();
-        jLabel22 = new javax.swing.JLabel();
-        jTextField19 = new javax.swing.JTextField();
-        jLabel23 = new javax.swing.JLabel();
-        jComboBox1 = new javax.swing.JComboBox<>();
-        jComboBox2 = new javax.swing.JComboBox<>();
-        jLabel24 = new javax.swing.JLabel();
-        jComboBox3 = new javax.swing.JComboBox<>();
-        jLabel25 = new javax.swing.JLabel();
-        jLabel26 = new javax.swing.JLabel();
-        jComboBox4 = new javax.swing.JComboBox<>();
-        jLabel27 = new javax.swing.JLabel();
-        jLabel28 = new javax.swing.JLabel();
-        jLabel29 = new javax.swing.JLabel();
-        jTextField21 = new javax.swing.JTextField();
-        jLabel30 = new javax.swing.JLabel();
-        MONTH1 = new javax.swing.JComboBox<>();
-        jLabel31 = new javax.swing.JLabel();
-        DAY1 = new javax.swing.JComboBox<>();
-        jLabel32 = new javax.swing.JLabel();
-        MONTH2 = new javax.swing.JComboBox<>();
-        jLabel33 = new javax.swing.JLabel();
-        DAY2 = new javax.swing.JComboBox<>();
-        MONTH3 = new javax.swing.JComboBox<>();
-        jLabel34 = new javax.swing.JLabel();
-        DAY3 = new javax.swing.JComboBox<>();
-        jLabel35 = new javax.swing.JLabel();
-        MONTH4 = new javax.swing.JComboBox<>();
-        DAY4 = new javax.swing.JComboBox<>();
-        jButton11 = new javax.swing.JButton();
-        jPanel5 = new javax.swing.JPanel();
-        jLabel36 = new javax.swing.JLabel();
-        jTextField20 = new javax.swing.JTextField();
-        jLabel37 = new javax.swing.JLabel();
-        jTextField22 = new javax.swing.JTextField();
-        jLabel38 = new javax.swing.JLabel();
-        jTextField23 = new javax.swing.JTextField();
-        jLabel39 = new javax.swing.JLabel();
-        jTextField24 = new javax.swing.JTextField();
-        MONTH5 = new javax.swing.JComboBox<>();
-        DAY5 = new javax.swing.JComboBox<>();
-        jTextField25 = new javax.swing.JTextField();
-        jLabel40 = new javax.swing.JLabel();
-        jTextField26 = new javax.swing.JTextField();
-        jLabel41 = new javax.swing.JLabel();
-        jLabel42 = new javax.swing.JLabel();
-        jLabel43 = new javax.swing.JLabel();
-        jTextField27 = new javax.swing.JTextField();
-        jButton1 = new javax.swing.JButton();
-        jPanel6 = new javax.swing.JPanel();
-        jTextField28 = new javax.swing.JTextField();
-        jLabel44 = new javax.swing.JLabel();
-        jLabel45 = new javax.swing.JLabel();
-        jComboBox5 = new javax.swing.JComboBox<>();
-        jButton12 = new javax.swing.JButton();
-        jPanel7 = new javax.swing.JPanel();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new javax.swing.JTable();
-        jButton2 = new javax.swing.JButton();
-        jPanel8 = new javax.swing.JPanel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        jTable2 = new javax.swing.JTable();
-        jButton3 = new javax.swing.JButton();
-        jPanel9 = new javax.swing.JPanel();
-        jScrollPane3 = new javax.swing.JScrollPane();
-        jTable3 = new javax.swing.JTable();
-        jButton4 = new javax.swing.JButton();
-        jPanel10 = new javax.swing.JPanel();
-        jButton5 = new javax.swing.JButton();
-        jScrollPane4 = new javax.swing.JScrollPane();
-        jTable4 = new javax.swing.JTable();
-        jPanel11 = new javax.swing.JPanel();
-        jScrollPane5 = new javax.swing.JScrollPane();
-        jTable5 = new javax.swing.JTable();
-        jButton6 = new javax.swing.JButton();
-        jPanel12 = new javax.swing.JPanel();
-        jComboBox6 = new javax.swing.JComboBox<>();
-        jLabel46 = new javax.swing.JLabel();
-        jLabel47 = new javax.swing.JLabel();
-        jComboBox7 = new javax.swing.JComboBox<>();
-        jLabel48 = new javax.swing.JLabel();
-        jComboBox8 = new javax.swing.JComboBox<>();
-        jButton7 = new javax.swing.JButton();
-        panelRound3 = new airport.PanelRound();
+        PassengerRegister = new javax.swing.JPanel();
+        PassengerBaseCountryLbl = new javax.swing.JLabel();
+        PassengerBaseIDLbl = new javax.swing.JLabel();
+        PassengerBaseFirstNameLbl = new javax.swing.JLabel();
+        PassengerBaseLastNameLbl = new javax.swing.JLabel();
+        PassengerBaseBirthdateLbl = new javax.swing.JLabel();
+        PassengerBasePhonePlus = new javax.swing.JLabel();
+        BaseCountryCode = new javax.swing.JTextField();
+        PassengerBaseID = new javax.swing.JTextField();
+        PassengerBaseBirthdateYear = new javax.swing.JTextField();
+        PassengerBaseCountry = new javax.swing.JTextField();
+        PassengerBasePhone = new javax.swing.JTextField();
+        PassengerBasePhoneLbl = new javax.swing.JLabel();
+        PassengerBaseBirthdateSpace1 = new javax.swing.JLabel();
+        PassengerBaseLastName = new javax.swing.JTextField();
+        PassengerBasePhoneSpace = new javax.swing.JLabel();
+        PassengerBaseBirthdateMonth = new javax.swing.JComboBox<>();
+        PassengerBaseFirstName = new javax.swing.JTextField();
+        PassengerBaseBirthdateSpace2 = new javax.swing.JLabel();
+        PassengerBaseBirthdateDay = new javax.swing.JComboBox<>();
+        RegisterPassengerBtn = new javax.swing.JButton();
+        AirplaneRegister = new javax.swing.JPanel();
+        PlaneIDLbl = new javax.swing.JLabel();
+        PlaneID = new javax.swing.JTextField();
+        PlaneBrandLbl = new javax.swing.JLabel();
+        PlaneBrand = new javax.swing.JTextField();
+        PlaneModel = new javax.swing.JTextField();
+        PlaneModelLbl = new javax.swing.JLabel();
+        PlaneMaxCapacity = new javax.swing.JTextField();
+        PlaneMaxCapacityLbl = new javax.swing.JLabel();
+        PlaneAirline = new javax.swing.JTextField();
+        PlaneAirlineLbl = new javax.swing.JLabel();
+        CreatePlaneBtn = new javax.swing.JButton();
+        LocationRegister = new javax.swing.JPanel();
+        AirportIDLbl = new javax.swing.JLabel();
+        AirportID = new javax.swing.JTextField();
+        AirportNameLbl = new javax.swing.JLabel();
+        AirportName = new javax.swing.JTextField();
+        AirportCity = new javax.swing.JTextField();
+        AirportCityLbl = new javax.swing.JLabel();
+        AirportCountryLbl = new javax.swing.JLabel();
+        AirportCountry = new javax.swing.JTextField();
+        AirportLatitude = new javax.swing.JTextField();
+        AirportLatitudeLbl = new javax.swing.JLabel();
+        AirportLongitudeLbl = new javax.swing.JLabel();
+        AirportLongitude = new javax.swing.JTextField();
+        CreateLocationBtn = new javax.swing.JButton();
+        FlightRegister = new javax.swing.JPanel();
+        FlightIDLbl = new javax.swing.JLabel();
+        FlightID = new javax.swing.JTextField();
+        FlightPlaneLbl = new javax.swing.JLabel();
+        FlightPlane = new javax.swing.JComboBox<>();
+        DepartureLocation = new javax.swing.JComboBox<>();
+        DepartureLocationLbl = new javax.swing.JLabel();
+        ArrivalLocation = new javax.swing.JComboBox<>();
+        ArrivalLocationLbl = new javax.swing.JLabel();
+        ScaleLocationLbl = new javax.swing.JLabel();
+        ScaleLocation = new javax.swing.JComboBox<>();
+        ScaleLocationDurationLbl = new javax.swing.JLabel();
+        ArrivalLocationDUrationLbl = new javax.swing.JLabel();
+        DepartureDateLbl = new javax.swing.JLabel();
+        DepartureDateYear = new javax.swing.JTextField();
+        DepartureDateSpace1 = new javax.swing.JLabel();
+        DepartureDateMonth = new javax.swing.JComboBox<>();
+        DepartureDateSpace2 = new javax.swing.JLabel();
+        DepartureDateDay = new javax.swing.JComboBox<>();
+        DepartureDateSpace3 = new javax.swing.JLabel();
+        DepartureDateHour = new javax.swing.JComboBox<>();
+        DepartureDateSpace4 = new javax.swing.JLabel();
+        DepartureDateMinute = new javax.swing.JComboBox<>();
+        ArrivalLocationHour = new javax.swing.JComboBox<>();
+        ArrivalLocationSpace = new javax.swing.JLabel();
+        ArrivalLocationMinute = new javax.swing.JComboBox<>();
+        ScaleLocationSpace = new javax.swing.JLabel();
+        ScaleLocationHour = new javax.swing.JComboBox<>();
+        ScaleLocationMinute = new javax.swing.JComboBox<>();
+        CreateFlightBtn = new javax.swing.JButton();
+        UpdatePassengerInfo = new javax.swing.JPanel();
+        PassengerIDLbl = new javax.swing.JLabel();
+        PassengerID = new javax.swing.JTextField();
+        PassengerFirstNameLbl = new javax.swing.JLabel();
+        PassengerFirstName = new javax.swing.JTextField();
+        PassengerLastNameLbl = new javax.swing.JLabel();
+        PassengerLastName = new javax.swing.JTextField();
+        PassengerBirthdateLbl = new javax.swing.JLabel();
+        PassengerBirthdateYear = new javax.swing.JTextField();
+        PassengerBirthdateMonth = new javax.swing.JComboBox<>();
+        PassengerBirthdateDay = new javax.swing.JComboBox<>();
+        PassengerPhoneNumber = new javax.swing.JTextField();
+        SpaceLbl = new javax.swing.JLabel();
+        CountryPhoneCode = new javax.swing.JTextField();
+        PlusLbl = new javax.swing.JLabel();
+        PassengerPhoneLbl = new javax.swing.JLabel();
+        PassengerCountryLbl = new javax.swing.JLabel();
+        PassengerCountry = new javax.swing.JTextField();
+        UpdatePassengerInfoBtn = new javax.swing.JButton();
+        AddPassengerToFlight = new javax.swing.JPanel();
+        IdPassengerToFlight = new javax.swing.JTextField();
+        IdPassengerToFlightLbl = new javax.swing.JLabel();
+        FlightToAddLbl = new javax.swing.JLabel();
+        FlightToAdd = new javax.swing.JComboBox<>();
+        AddPassengerToFlightBtn = new javax.swing.JButton();
+        ShowPassengerFlights = new javax.swing.JPanel();
+        PassengerFlightsPane = new javax.swing.JScrollPane();
+        PassengerFlightsTable = new javax.swing.JTable();
+        RefreshPassengersFlights = new javax.swing.JButton();
+        ShowAllPassengers = new javax.swing.JPanel();
+        PassengersPane = new javax.swing.JScrollPane();
+        PassengersTable = new javax.swing.JTable();
+        PassengersRefresh = new javax.swing.JButton();
+        ShowAllFlights = new javax.swing.JPanel();
+        FlightsPane = new javax.swing.JScrollPane();
+        FlightsTable = new javax.swing.JTable();
+        RefreshFlights = new javax.swing.JButton();
+        ShowAllPlanes = new javax.swing.JPanel();
+        RefreshPlanes = new javax.swing.JButton();
+        PlanesPane = new javax.swing.JScrollPane();
+        PlanesTable = new javax.swing.JTable();
+        ShowAllLocations = new javax.swing.JPanel();
+        LocationsPane = new javax.swing.JScrollPane();
+        LocationsTable = new javax.swing.JTable();
+        RefreshLocations = new javax.swing.JButton();
+        DelayFlight = new javax.swing.JPanel();
+        HourDelay = new javax.swing.JComboBox<>();
+        HoursDelayLbl = new javax.swing.JLabel();
+        IdDelayLbl = new javax.swing.JLabel();
+        IdDelay = new javax.swing.JComboBox<>();
+        MinutesDelayLbl = new javax.swing.JLabel();
+        MinutesDelay = new javax.swing.JComboBox<>();
+        DelayBtn = new javax.swing.JButton();
+        BottomPanel = new airport.PanelRound();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setUndecorated(true);
@@ -243,49 +294,49 @@ public class AirportFrame extends javax.swing.JFrame {
         panelRound1.setRadius(40);
         panelRound1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        panelRound2.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+        TopPanel.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
             public void mouseDragged(java.awt.event.MouseEvent evt) {
-                panelRound2MouseDragged(evt);
+                TopPanelMouseDragged(evt);
             }
         });
-        panelRound2.addMouseListener(new java.awt.event.MouseAdapter() {
+        TopPanel.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mousePressed(java.awt.event.MouseEvent evt) {
-                panelRound2MousePressed(evt);
+                TopPanelMousePressed(evt);
             }
         });
 
-        jButton13.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jButton13.setText("X");
-        jButton13.setBorderPainted(false);
-        jButton13.setContentAreaFilled(false);
-        jButton13.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        jButton13.addActionListener(new java.awt.event.ActionListener() {
+        ExitBtn.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        ExitBtn.setText("X");
+        ExitBtn.setBorderPainted(false);
+        ExitBtn.setContentAreaFilled(false);
+        ExitBtn.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        ExitBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton13ActionPerformed(evt);
+                ExitBtnActionPerformed(evt);
             }
         });
 
-        javax.swing.GroupLayout panelRound2Layout = new javax.swing.GroupLayout(panelRound2);
-        panelRound2.setLayout(panelRound2Layout);
-        panelRound2Layout.setHorizontalGroup(
-            panelRound2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, panelRound2Layout.createSequentialGroup()
+        javax.swing.GroupLayout TopPanelLayout = new javax.swing.GroupLayout(TopPanel);
+        TopPanel.setLayout(TopPanelLayout);
+        TopPanelLayout.setHorizontalGroup(
+            TopPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, TopPanelLayout.createSequentialGroup()
                 .addContainerGap(1083, Short.MAX_VALUE)
-                .addComponent(jButton13, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(ExitBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(17, 17, 17))
         );
-        panelRound2Layout.setVerticalGroup(
-            panelRound2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelRound2Layout.createSequentialGroup()
-                .addComponent(jButton13)
+        TopPanelLayout.setVerticalGroup(
+            TopPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(TopPanelLayout.createSequentialGroup()
+                .addComponent(ExitBtn)
                 .addGap(0, 12, Short.MAX_VALUE))
         );
 
-        panelRound1.add(panelRound2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1150, -1));
+        panelRound1.add(TopPanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1150, -1));
 
-        jTabbedPane1.setFont(new java.awt.Font("Yu Gothic UI", 0, 14)); // NOI18N
+        GeneralPanel.setFont(new java.awt.Font("Yu Gothic UI", 0, 14)); // NOI18N
 
-        jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+        SelectionPanel.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         user.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         user.setText("User");
@@ -294,7 +345,7 @@ public class AirportFrame extends javax.swing.JFrame {
                 userActionPerformed(evt);
             }
         });
-        jPanel1.add(user, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 230, -1, -1));
+        SelectionPanel.add(user, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 230, -1, -1));
 
         administrator.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         administrator.setText("Administrator");
@@ -303,7 +354,7 @@ public class AirportFrame extends javax.swing.JFrame {
                 administratorActionPerformed(evt);
             }
         });
-        jPanel1.add(administrator, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 164, -1, -1));
+        SelectionPanel.add(administrator, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 164, -1, -1));
 
         userSelect.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
         userSelect.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Select User" }));
@@ -312,685 +363,685 @@ public class AirportFrame extends javax.swing.JFrame {
                 userSelectActionPerformed(evt);
             }
         });
-        jPanel1.add(userSelect, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 300, 130, -1));
+        SelectionPanel.add(userSelect, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 300, 130, -1));
 
-        jTabbedPane1.addTab("Administration", jPanel1);
+        GeneralPanel.addTab("Administration", SelectionPanel);
 
-        jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+        PassengerRegister.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jLabel1.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel1.setText("Country:");
-        jPanel2.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 400, -1, -1));
+        PassengerBaseCountryLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBaseCountryLbl.setText("Country:");
+        PassengerRegister.add(PassengerBaseCountryLbl, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 400, -1, -1));
 
-        jLabel2.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel2.setText("ID:");
-        jPanel2.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 90, -1, -1));
+        PassengerBaseIDLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBaseIDLbl.setText("ID:");
+        PassengerRegister.add(PassengerBaseIDLbl, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 90, -1, -1));
 
-        jLabel3.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel3.setText("First Name:");
-        jPanel2.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 160, -1, -1));
+        PassengerBaseFirstNameLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBaseFirstNameLbl.setText("First Name:");
+        PassengerRegister.add(PassengerBaseFirstNameLbl, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 160, -1, -1));
 
-        jLabel4.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel4.setText("Last Name:");
-        jPanel2.add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 220, -1, -1));
+        PassengerBaseLastNameLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBaseLastNameLbl.setText("Last Name:");
+        PassengerRegister.add(PassengerBaseLastNameLbl, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 220, -1, -1));
 
-        jLabel5.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel5.setText("Birthdate:");
-        jPanel2.add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 280, -1, -1));
+        PassengerBaseBirthdateLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBaseBirthdateLbl.setText("Birthdate:");
+        PassengerRegister.add(PassengerBaseBirthdateLbl, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 280, -1, -1));
 
-        jLabel6.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel6.setText("+");
-        jPanel2.add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 340, 20, -1));
+        PassengerBasePhonePlus.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBasePhonePlus.setText("+");
+        PassengerRegister.add(PassengerBasePhonePlus, new org.netbeans.lib.awtextra.AbsoluteConstraints(160, 340, 20, -1));
 
-        jTextField1.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jPanel2.add(jTextField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 340, 50, -1));
+        BaseCountryCode.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerRegister.add(BaseCountryCode, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 340, 50, -1));
 
-        jTextField2.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jPanel2.add(jTextField2, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 90, 130, -1));
+        PassengerBaseID.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerRegister.add(PassengerBaseID, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 90, 130, -1));
 
-        jTextField3.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jPanel2.add(jTextField3, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 280, 90, -1));
+        PassengerBaseBirthdateYear.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerRegister.add(PassengerBaseBirthdateYear, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 280, 90, -1));
 
-        jTextField4.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jPanel2.add(jTextField4, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 400, 130, -1));
+        PassengerBaseCountry.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerRegister.add(PassengerBaseCountry, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 400, 130, -1));
 
-        jTextField5.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jPanel2.add(jTextField5, new org.netbeans.lib.awtextra.AbsoluteConstraints(280, 340, 130, -1));
+        PassengerBasePhone.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerRegister.add(PassengerBasePhone, new org.netbeans.lib.awtextra.AbsoluteConstraints(280, 340, 130, -1));
 
-        jLabel7.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel7.setText("Phone:");
-        jPanel2.add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 340, -1, -1));
+        PassengerBasePhoneLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBasePhoneLbl.setText("Phone:");
+        PassengerRegister.add(PassengerBasePhoneLbl, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 340, -1, -1));
 
-        jLabel8.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel8.setText("-");
-        jPanel2.add(jLabel8, new org.netbeans.lib.awtextra.AbsoluteConstraints(280, 280, 30, -1));
+        PassengerBaseBirthdateSpace1.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBaseBirthdateSpace1.setText("-");
+        PassengerRegister.add(PassengerBaseBirthdateSpace1, new org.netbeans.lib.awtextra.AbsoluteConstraints(280, 280, 30, -1));
 
-        jTextField6.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jPanel2.add(jTextField6, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 220, 130, -1));
+        PassengerBaseLastName.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerRegister.add(PassengerBaseLastName, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 220, 130, -1));
 
-        jLabel9.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel9.setText("-");
-        jPanel2.add(jLabel9, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 340, 30, -1));
+        PassengerBasePhoneSpace.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBasePhoneSpace.setText("-");
+        PassengerRegister.add(PassengerBasePhoneSpace, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 340, 30, -1));
 
-        MONTH.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        MONTH.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Month" }));
-        jPanel2.add(MONTH, new org.netbeans.lib.awtextra.AbsoluteConstraints(300, 280, -1, -1));
+        PassengerBaseBirthdateMonth.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBaseBirthdateMonth.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Month" }));
+        PassengerRegister.add(PassengerBaseBirthdateMonth, new org.netbeans.lib.awtextra.AbsoluteConstraints(300, 280, -1, -1));
 
-        jTextField7.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jPanel2.add(jTextField7, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 160, 130, -1));
+        PassengerBaseFirstName.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerRegister.add(PassengerBaseFirstName, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 160, 130, -1));
 
-        jLabel10.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel10.setText("-");
-        jPanel2.add(jLabel10, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 280, 30, -1));
+        PassengerBaseBirthdateSpace2.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBaseBirthdateSpace2.setText("-");
+        PassengerRegister.add(PassengerBaseBirthdateSpace2, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 280, 30, -1));
 
-        DAY.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        DAY.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Day" }));
-        jPanel2.add(DAY, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 280, -1, -1));
+        PassengerBaseBirthdateDay.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBaseBirthdateDay.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Day" }));
+        PassengerRegister.add(PassengerBaseBirthdateDay, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 280, -1, -1));
 
-        jButton8.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jButton8.setText("Register");
-        jButton8.addActionListener(new java.awt.event.ActionListener() {
+        RegisterPassengerBtn.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        RegisterPassengerBtn.setText("Register");
+        RegisterPassengerBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton8ActionPerformed(evt);
+                RegisterPassengerBtnActionPerformed(evt);
             }
         });
-        jPanel2.add(jButton8, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 480, -1, -1));
+        PassengerRegister.add(RegisterPassengerBtn, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 480, -1, -1));
 
-        jTabbedPane1.addTab("Passenger registration", jPanel2);
+        GeneralPanel.addTab("Passenger registration", PassengerRegister);
 
-        jPanel3.setLayout(null);
+        AirplaneRegister.setLayout(null);
 
-        jLabel11.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel11.setText("ID:");
-        jPanel3.add(jLabel11);
-        jLabel11.setBounds(53, 96, 22, 25);
+        PlaneIDLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PlaneIDLbl.setText("ID:");
+        AirplaneRegister.add(PlaneIDLbl);
+        PlaneIDLbl.setBounds(53, 96, 22, 25);
 
-        jTextField8.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jPanel3.add(jTextField8);
-        jTextField8.setBounds(180, 93, 130, 31);
+        PlaneID.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirplaneRegister.add(PlaneID);
+        PlaneID.setBounds(180, 93, 130, 31);
 
-        jLabel12.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel12.setText("Brand:");
-        jPanel3.add(jLabel12);
-        jLabel12.setBounds(53, 157, 50, 25);
+        PlaneBrandLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PlaneBrandLbl.setText("Brand:");
+        AirplaneRegister.add(PlaneBrandLbl);
+        PlaneBrandLbl.setBounds(53, 157, 50, 25);
 
-        jTextField9.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jPanel3.add(jTextField9);
-        jTextField9.setBounds(180, 154, 130, 31);
+        PlaneBrand.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirplaneRegister.add(PlaneBrand);
+        PlaneBrand.setBounds(180, 154, 130, 31);
 
-        jTextField10.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jPanel3.add(jTextField10);
-        jTextField10.setBounds(180, 213, 130, 31);
+        PlaneModel.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirplaneRegister.add(PlaneModel);
+        PlaneModel.setBounds(180, 213, 130, 31);
 
-        jLabel13.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel13.setText("Model:");
-        jPanel3.add(jLabel13);
-        jLabel13.setBounds(53, 216, 55, 25);
+        PlaneModelLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PlaneModelLbl.setText("Model:");
+        AirplaneRegister.add(PlaneModelLbl);
+        PlaneModelLbl.setBounds(53, 216, 55, 25);
 
-        jTextField11.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jPanel3.add(jTextField11);
-        jTextField11.setBounds(180, 273, 130, 31);
+        PlaneMaxCapacity.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirplaneRegister.add(PlaneMaxCapacity);
+        PlaneMaxCapacity.setBounds(180, 273, 130, 31);
 
-        jLabel14.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel14.setText("Max Capacity:");
-        jPanel3.add(jLabel14);
-        jLabel14.setBounds(53, 276, 109, 25);
+        PlaneMaxCapacityLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PlaneMaxCapacityLbl.setText("Max Capacity:");
+        AirplaneRegister.add(PlaneMaxCapacityLbl);
+        PlaneMaxCapacityLbl.setBounds(53, 276, 109, 25);
 
-        jTextField12.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jPanel3.add(jTextField12);
-        jTextField12.setBounds(180, 333, 130, 31);
+        PlaneAirline.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirplaneRegister.add(PlaneAirline);
+        PlaneAirline.setBounds(180, 333, 130, 31);
 
-        jLabel15.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel15.setText("Airline:");
-        jPanel3.add(jLabel15);
-        jLabel15.setBounds(53, 336, 70, 25);
+        PlaneAirlineLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PlaneAirlineLbl.setText("Airline:");
+        AirplaneRegister.add(PlaneAirlineLbl);
+        PlaneAirlineLbl.setBounds(53, 336, 70, 25);
 
-        jButton9.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jButton9.setText("Create");
-        jButton9.addActionListener(new java.awt.event.ActionListener() {
+        CreatePlaneBtn.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        CreatePlaneBtn.setText("Create");
+        CreatePlaneBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton9ActionPerformed(evt);
+                CreatePlaneBtnActionPerformed(evt);
             }
         });
-        jPanel3.add(jButton9);
-        jButton9.setBounds(490, 480, 120, 40);
+        AirplaneRegister.add(CreatePlaneBtn);
+        CreatePlaneBtn.setBounds(490, 480, 120, 40);
 
-        jTabbedPane1.addTab("Airplane registration", jPanel3);
+        GeneralPanel.addTab("Airplane registration", AirplaneRegister);
 
-        jLabel16.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel16.setText("Airport ID:");
+        AirportIDLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirportIDLbl.setText("Airport ID:");
 
-        jTextField13.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirportID.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
 
-        jLabel17.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel17.setText("Airport name:");
+        AirportNameLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirportNameLbl.setText("Airport name:");
 
-        jTextField14.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirportName.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
 
-        jTextField15.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirportCity.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
 
-        jLabel18.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel18.setText("Airport city:");
+        AirportCityLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirportCityLbl.setText("Airport city:");
 
-        jLabel19.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel19.setText("Airport country:");
+        AirportCountryLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirportCountryLbl.setText("Airport country:");
 
-        jTextField16.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirportCountry.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
 
-        jTextField17.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirportLatitude.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
 
-        jLabel20.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel20.setText("Airport latitude:");
+        AirportLatitudeLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirportLatitudeLbl.setText("Airport latitude:");
 
-        jLabel21.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel21.setText("Airport longitude:");
+        AirportLongitudeLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirportLongitudeLbl.setText("Airport longitude:");
 
-        jTextField18.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AirportLongitude.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
 
-        jButton10.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jButton10.setText("Create");
-        jButton10.addActionListener(new java.awt.event.ActionListener() {
+        CreateLocationBtn.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        CreateLocationBtn.setText("Create");
+        CreateLocationBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton10ActionPerformed(evt);
+                CreateLocationBtnActionPerformed(evt);
             }
         });
 
-        javax.swing.GroupLayout jPanel13Layout = new javax.swing.GroupLayout(jPanel13);
-        jPanel13.setLayout(jPanel13Layout);
-        jPanel13Layout.setHorizontalGroup(
-            jPanel13Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel13Layout.createSequentialGroup()
-                .addGroup(jPanel13Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel13Layout.createSequentialGroup()
+        javax.swing.GroupLayout LocationRegisterLayout = new javax.swing.GroupLayout(LocationRegister);
+        LocationRegister.setLayout(LocationRegisterLayout);
+        LocationRegisterLayout.setHorizontalGroup(
+            LocationRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(LocationRegisterLayout.createSequentialGroup()
+                .addGroup(LocationRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(LocationRegisterLayout.createSequentialGroup()
                         .addGap(52, 52, 52)
-                        .addGroup(jPanel13Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel16)
-                            .addComponent(jLabel17)
-                            .addComponent(jLabel18)
-                            .addComponent(jLabel19)
-                            .addComponent(jLabel20)
-                            .addComponent(jLabel21))
+                        .addGroup(LocationRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(AirportIDLbl)
+                            .addComponent(AirportNameLbl)
+                            .addComponent(AirportCityLbl)
+                            .addComponent(AirportCountryLbl)
+                            .addComponent(AirportLatitudeLbl)
+                            .addComponent(AirportLongitudeLbl))
                         .addGap(80, 80, 80)
-                        .addGroup(jPanel13Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jTextField18, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jTextField13, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jTextField14, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jTextField15, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jTextField16, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jTextField17, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(jPanel13Layout.createSequentialGroup()
+                        .addGroup(LocationRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(AirportLongitude, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(AirportID, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(AirportName, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(AirportCity, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(AirportCountry, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(AirportLatitude, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(LocationRegisterLayout.createSequentialGroup()
                         .addGap(515, 515, 515)
-                        .addComponent(jButton10, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(CreateLocationBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(515, 515, 515))
         );
-        jPanel13Layout.setVerticalGroup(
-            jPanel13Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel13Layout.createSequentialGroup()
+        LocationRegisterLayout.setVerticalGroup(
+            LocationRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(LocationRegisterLayout.createSequentialGroup()
                 .addGap(71, 71, 71)
-                .addGroup(jPanel13Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(jPanel13Layout.createSequentialGroup()
-                        .addComponent(jLabel16)
+                .addGroup(LocationRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(LocationRegisterLayout.createSequentialGroup()
+                        .addComponent(AirportIDLbl)
                         .addGap(36, 36, 36)
-                        .addComponent(jLabel17)
+                        .addComponent(AirportNameLbl)
                         .addGap(34, 34, 34)
-                        .addComponent(jLabel18)
+                        .addComponent(AirportCityLbl)
                         .addGap(35, 35, 35)
-                        .addComponent(jLabel19)
+                        .addComponent(AirportCountryLbl)
                         .addGap(35, 35, 35)
-                        .addComponent(jLabel20))
-                    .addGroup(jPanel13Layout.createSequentialGroup()
-                        .addComponent(jTextField13, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(AirportLatitudeLbl))
+                    .addGroup(LocationRegisterLayout.createSequentialGroup()
+                        .addComponent(AirportID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(30, 30, 30)
-                        .addComponent(jTextField14, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(AirportName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(28, 28, 28)
-                        .addComponent(jTextField15, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(AirportCity, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(29, 29, 29)
-                        .addComponent(jTextField16, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(AirportCountry, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(29, 29, 29)
-                        .addComponent(jTextField17, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(AirportLatitude, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(44, 44, 44)
-                .addGroup(jPanel13Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel21)
-                    .addComponent(jTextField18, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(LocationRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(AirportLongitudeLbl)
+                    .addComponent(AirportLongitude, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 51, Short.MAX_VALUE)
-                .addComponent(jButton10, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(CreateLocationBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(47, 47, 47))
         );
 
-        jTabbedPane1.addTab("Location registration", jPanel13);
+        GeneralPanel.addTab("Location registration", LocationRegister);
 
-        jLabel22.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel22.setText("ID:");
+        FlightIDLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        FlightIDLbl.setText("ID:");
 
-        jTextField19.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        FlightID.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
 
-        jLabel23.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel23.setText("Plane:");
+        FlightPlaneLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        FlightPlaneLbl.setText("Plane:");
 
-        jComboBox1.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Plane" }));
+        FlightPlane.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        FlightPlane.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Plane" }));
 
-        jComboBox2.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jComboBox2.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Location" }));
+        DepartureLocation.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        DepartureLocation.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Location" }));
 
-        jLabel24.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel24.setText("Departure location:");
+        DepartureLocationLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        DepartureLocationLbl.setText("Departure location:");
 
-        jComboBox3.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jComboBox3.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Location" }));
+        ArrivalLocation.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        ArrivalLocation.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Location" }));
 
-        jLabel25.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel25.setText("Arrival location:");
+        ArrivalLocationLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        ArrivalLocationLbl.setText("Arrival location:");
 
-        jLabel26.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel26.setText("Scale location:");
+        ScaleLocationLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        ScaleLocationLbl.setText("Scale location:");
 
-        jComboBox4.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jComboBox4.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Location" }));
+        ScaleLocation.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        ScaleLocation.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Location" }));
 
-        jLabel27.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel27.setText("Duration:");
+        ScaleLocationDurationLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        ScaleLocationDurationLbl.setText("Duration:");
 
-        jLabel28.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel28.setText("Duration:");
+        ArrivalLocationDUrationLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        ArrivalLocationDUrationLbl.setText("Duration:");
 
-        jLabel29.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel29.setText("Departure date:");
+        DepartureDateLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        DepartureDateLbl.setText("Departure date:");
 
-        jTextField21.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        DepartureDateYear.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
 
-        jLabel30.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel30.setText("-");
+        DepartureDateSpace1.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        DepartureDateSpace1.setText("-");
 
-        MONTH1.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        MONTH1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Month" }));
+        DepartureDateMonth.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        DepartureDateMonth.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Month" }));
 
-        jLabel31.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel31.setText("-");
+        DepartureDateSpace2.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        DepartureDateSpace2.setText("-");
 
-        DAY1.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        DAY1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Day" }));
+        DepartureDateDay.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        DepartureDateDay.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Day" }));
 
-        jLabel32.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel32.setText("-");
+        DepartureDateSpace3.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        DepartureDateSpace3.setText("-");
 
-        MONTH2.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        MONTH2.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Hour" }));
+        DepartureDateHour.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        DepartureDateHour.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Hour" }));
 
-        jLabel33.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel33.setText("-");
+        DepartureDateSpace4.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        DepartureDateSpace4.setText("-");
 
-        DAY2.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        DAY2.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Minute" }));
+        DepartureDateMinute.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        DepartureDateMinute.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Minute" }));
 
-        MONTH3.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        MONTH3.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Hour" }));
+        ArrivalLocationHour.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        ArrivalLocationHour.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Hour" }));
 
-        jLabel34.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel34.setText("-");
+        ArrivalLocationSpace.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        ArrivalLocationSpace.setText("-");
 
-        DAY3.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        DAY3.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Minute" }));
+        ArrivalLocationMinute.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        ArrivalLocationMinute.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Minute" }));
 
-        jLabel35.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel35.setText("-");
+        ScaleLocationSpace.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        ScaleLocationSpace.setText("-");
 
-        MONTH4.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        MONTH4.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Hour" }));
+        ScaleLocationHour.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        ScaleLocationHour.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Hour" }));
 
-        DAY4.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        DAY4.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Minute" }));
+        ScaleLocationMinute.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        ScaleLocationMinute.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Minute" }));
 
-        jButton11.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jButton11.setText("Create");
-        jButton11.addActionListener(new java.awt.event.ActionListener() {
+        CreateFlightBtn.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        CreateFlightBtn.setText("Create");
+        CreateFlightBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton11ActionPerformed(evt);
+                CreateFlightBtnActionPerformed(evt);
             }
         });
 
-        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
-        jPanel4.setLayout(jPanel4Layout);
-        jPanel4Layout.setHorizontalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
+        javax.swing.GroupLayout FlightRegisterLayout = new javax.swing.GroupLayout(FlightRegister);
+        FlightRegister.setLayout(FlightRegisterLayout);
+        FlightRegisterLayout.setHorizontalGroup(
+            FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(FlightRegisterLayout.createSequentialGroup()
                 .addGap(73, 73, 73)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addComponent(jLabel26)
+                .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(FlightRegisterLayout.createSequentialGroup()
+                        .addComponent(ScaleLocationLbl)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jComboBox4, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
-                        .addComponent(jLabel25)
+                        .addComponent(ScaleLocation, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, FlightRegisterLayout.createSequentialGroup()
+                        .addComponent(ArrivalLocationLbl)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addComponent(jLabel24)
+                        .addComponent(ArrivalLocation, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(FlightRegisterLayout.createSequentialGroup()
+                        .addComponent(DepartureLocationLbl)
                         .addGap(46, 46, 46)
-                        .addComponent(jComboBox2, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel22)
-                            .addComponent(jLabel23))
+                        .addComponent(DepartureLocation, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(FlightRegisterLayout.createSequentialGroup()
+                        .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(FlightIDLbl)
+                            .addComponent(FlightPlaneLbl))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jTextField19)
-                            .addComponent(jComboBox1, 0, 130, Short.MAX_VALUE))))
+                        .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(FlightID)
+                            .addComponent(FlightPlane, 0, 130, Short.MAX_VALUE))))
                 .addGap(45, 45, 45)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jLabel27)
-                    .addComponent(jLabel28)
-                    .addComponent(jLabel29))
+                .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(ScaleLocationDurationLbl)
+                    .addComponent(ArrivalLocationDUrationLbl)
+                    .addComponent(DepartureDateLbl))
                 .addGap(18, 18, 18)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addComponent(jTextField21, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(FlightRegisterLayout.createSequentialGroup()
+                        .addComponent(DepartureDateYear, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(10, 10, 10)
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(FlightRegisterLayout.createSequentialGroup()
                                 .addGap(20, 20, 20)
-                                .addComponent(MONTH1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(jLabel30, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(DepartureDateMonth, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(DepartureDateSpace1, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(14, 14, 14)
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel31, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(DepartureDateSpace2, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(FlightRegisterLayout.createSequentialGroup()
                                 .addGap(20, 20, 20)
-                                .addComponent(DAY1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addComponent(DepartureDateDay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(FlightRegisterLayout.createSequentialGroup()
                                 .addGap(20, 20, 20)
-                                .addComponent(MONTH2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(jLabel32, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(DepartureDateHour, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(DepartureDateSpace3, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(14, 14, 14)
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel33, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(DepartureDateSpace4, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(FlightRegisterLayout.createSequentialGroup()
                                 .addGap(20, 20, 20)
-                                .addComponent(DAY2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addComponent(DepartureDateMinute, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                         .addGap(30, 30, 30))
-                    .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel4Layout.createSequentialGroup()
-                                .addComponent(MONTH3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(FlightRegisterLayout.createSequentialGroup()
+                        .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(FlightRegisterLayout.createSequentialGroup()
+                                .addComponent(ArrivalLocationHour, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(14, 14, 14)
-                                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel34, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addGroup(jPanel4Layout.createSequentialGroup()
+                                .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(ArrivalLocationSpace, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addGroup(FlightRegisterLayout.createSequentialGroup()
                                         .addGap(20, 20, 20)
-                                        .addComponent(DAY3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                            .addGroup(jPanel4Layout.createSequentialGroup()
-                                .addComponent(MONTH4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(ArrivalLocationMinute, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addGroup(FlightRegisterLayout.createSequentialGroup()
+                                .addComponent(ScaleLocationHour, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(14, 14, 14)
-                                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel35, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addGroup(jPanel4Layout.createSequentialGroup()
+                                .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(ScaleLocationSpace, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addGroup(FlightRegisterLayout.createSequentialGroup()
                                         .addGap(20, 20, 20)
-                                        .addComponent(DAY4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                                        .addComponent(ScaleLocationMinute, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))))
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, FlightRegisterLayout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jButton11, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(CreateFlightBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(530, 530, 530))
         );
-        jPanel4Layout.setVerticalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
+        FlightRegisterLayout.setVerticalGroup(
+            FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(FlightRegisterLayout.createSequentialGroup()
                 .addGap(45, 45, 45)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(FlightRegisterLayout.createSequentialGroup()
                         .addGap(3, 3, 3)
-                        .addComponent(jLabel22))
-                    .addComponent(jTextField19, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(FlightIDLbl))
+                    .addComponent(FlightID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(27, 27, 27)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel23)
-                    .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(FlightPlaneLbl)
+                    .addComponent(FlightPlane, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(32, 32, 32)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(MONTH2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel32)
-                    .addComponent(jLabel33)
-                    .addComponent(DAY2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(jLabel24)
-                                .addComponent(jComboBox2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabel29))
-                            .addComponent(jTextField21, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(MONTH1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel30)
-                            .addComponent(jLabel31)
-                            .addComponent(DAY1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(DepartureDateHour, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(DepartureDateSpace3)
+                    .addComponent(DepartureDateSpace4)
+                    .addComponent(DepartureDateMinute, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(FlightRegisterLayout.createSequentialGroup()
+                        .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(DepartureLocationLbl)
+                                .addComponent(DepartureLocation, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(DepartureDateLbl))
+                            .addComponent(DepartureDateYear, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(DepartureDateMonth, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(DepartureDateSpace1)
+                            .addComponent(DepartureDateSpace2)
+                            .addComponent(DepartureDateDay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(38, 38, 38)
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(jLabel25)
-                                .addComponent(jComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabel28))
-                            .addComponent(MONTH3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel34)
-                            .addComponent(DAY3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(ArrivalLocationLbl)
+                                .addComponent(ArrivalLocation, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(ArrivalLocationDUrationLbl))
+                            .addComponent(ArrivalLocationHour, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(ArrivalLocationSpace)
+                            .addComponent(ArrivalLocationMinute, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(34, 34, 34)
-                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(MONTH4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel35)
-                            .addComponent(DAY4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(jLabel26)
-                                .addComponent(jComboBox4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabel27)))))
+                        .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(ScaleLocationHour, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(ScaleLocationSpace)
+                            .addComponent(ScaleLocationMinute, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(FlightRegisterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(ScaleLocationLbl)
+                                .addComponent(ScaleLocation, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(ScaleLocationDurationLbl)))))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 134, Short.MAX_VALUE)
-                .addComponent(jButton11, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(CreateFlightBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(50, 50, 50))
         );
 
-        jTabbedPane1.addTab("Flight registration", jPanel4);
+        GeneralPanel.addTab("Flight registration", FlightRegister);
 
-        jLabel36.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel36.setText("ID:");
+        PassengerIDLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerIDLbl.setText("ID:");
 
-        jTextField20.setEditable(false);
-        jTextField20.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jTextField20.setEnabled(false);
+        PassengerID.setEditable(false);
+        PassengerID.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerID.setEnabled(false);
 
-        jLabel37.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel37.setText("First Name:");
+        PassengerFirstNameLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerFirstNameLbl.setText("First Name:");
 
-        jTextField22.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerFirstName.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
 
-        jLabel38.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel38.setText("Last Name:");
+        PassengerLastNameLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerLastNameLbl.setText("Last Name:");
 
-        jTextField23.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerLastName.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
 
-        jLabel39.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel39.setText("Birthdate:");
+        PassengerBirthdateLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBirthdateLbl.setText("Birthdate:");
 
-        jTextField24.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBirthdateYear.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
 
-        MONTH5.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        MONTH5.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Month" }));
+        PassengerBirthdateMonth.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBirthdateMonth.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Month" }));
 
-        DAY5.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        DAY5.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Day" }));
+        PassengerBirthdateDay.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerBirthdateDay.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Day" }));
 
-        jTextField25.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerPhoneNumber.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
 
-        jLabel40.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel40.setText("-");
+        SpaceLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        SpaceLbl.setText("-");
 
-        jTextField26.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        CountryPhoneCode.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
 
-        jLabel41.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel41.setText("+");
+        PlusLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PlusLbl.setText("+");
 
-        jLabel42.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel42.setText("Phone:");
+        PassengerPhoneLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerPhoneLbl.setText("Phone:");
 
-        jLabel43.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel43.setText("Country:");
+        PassengerCountryLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerCountryLbl.setText("Country:");
 
-        jTextField27.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerCountry.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
 
-        jButton1.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jButton1.setText("Update");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        UpdatePassengerInfoBtn.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        UpdatePassengerInfoBtn.setText("Update");
+        UpdatePassengerInfoBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                UpdatePassengerInfoBtnActionPerformed(evt);
             }
         });
 
-        javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
-        jPanel5.setLayout(jPanel5Layout);
-        jPanel5Layout.setHorizontalGroup(
-            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel5Layout.createSequentialGroup()
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel5Layout.createSequentialGroup()
+        javax.swing.GroupLayout UpdatePassengerInfoLayout = new javax.swing.GroupLayout(UpdatePassengerInfo);
+        UpdatePassengerInfo.setLayout(UpdatePassengerInfoLayout);
+        UpdatePassengerInfoLayout.setHorizontalGroup(
+            UpdatePassengerInfoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(UpdatePassengerInfoLayout.createSequentialGroup()
+                .addGroup(UpdatePassengerInfoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(UpdatePassengerInfoLayout.createSequentialGroup()
                         .addGap(72, 72, 72)
-                        .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel5Layout.createSequentialGroup()
-                                .addComponent(jLabel36)
+                        .addGroup(UpdatePassengerInfoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(UpdatePassengerInfoLayout.createSequentialGroup()
+                                .addComponent(PassengerIDLbl)
                                 .addGap(108, 108, 108)
-                                .addComponent(jTextField20, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel5Layout.createSequentialGroup()
-                                .addComponent(jLabel37)
+                                .addComponent(PassengerID, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(UpdatePassengerInfoLayout.createSequentialGroup()
+                                .addComponent(PassengerFirstNameLbl)
                                 .addGap(41, 41, 41)
-                                .addComponent(jTextField22, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel5Layout.createSequentialGroup()
-                                .addComponent(jLabel38)
+                                .addComponent(PassengerFirstName, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(UpdatePassengerInfoLayout.createSequentialGroup()
+                                .addComponent(PassengerLastNameLbl)
                                 .addGap(43, 43, 43)
-                                .addComponent(jTextField23, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel5Layout.createSequentialGroup()
-                                .addComponent(jLabel39)
+                                .addComponent(PassengerLastName, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(UpdatePassengerInfoLayout.createSequentialGroup()
+                                .addComponent(PassengerBirthdateLbl)
                                 .addGap(55, 55, 55)
-                                .addComponent(jTextField24, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(PassengerBirthdateYear, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(30, 30, 30)
-                                .addComponent(MONTH5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(PassengerBirthdateMonth, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(34, 34, 34)
-                                .addComponent(DAY5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel5Layout.createSequentialGroup()
-                                .addComponent(jLabel42)
+                                .addComponent(PassengerBirthdateDay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(UpdatePassengerInfoLayout.createSequentialGroup()
+                                .addComponent(PassengerPhoneLbl)
                                 .addGap(56, 56, 56)
-                                .addComponent(jLabel41, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(PlusLbl, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(0, 0, 0)
-                                .addComponent(jTextField26, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(CountryPhoneCode, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(20, 20, 20)
-                                .addComponent(jLabel40, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(SpaceLbl, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(0, 0, 0)
-                                .addComponent(jTextField25, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel5Layout.createSequentialGroup()
-                                .addComponent(jLabel43)
+                                .addComponent(PassengerPhoneNumber, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(UpdatePassengerInfoLayout.createSequentialGroup()
+                                .addComponent(PassengerCountryLbl)
                                 .addGap(63, 63, 63)
-                                .addComponent(jTextField27, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                    .addGroup(jPanel5Layout.createSequentialGroup()
+                                .addComponent(PassengerCountry, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                    .addGroup(UpdatePassengerInfoLayout.createSequentialGroup()
                         .addGap(507, 507, 507)
-                        .addComponent(jButton1)))
+                        .addComponent(UpdatePassengerInfoBtn)))
                 .addContainerGap(555, Short.MAX_VALUE))
         );
-        jPanel5Layout.setVerticalGroup(
-            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel5Layout.createSequentialGroup()
+        UpdatePassengerInfoLayout.setVerticalGroup(
+            UpdatePassengerInfoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(UpdatePassengerInfoLayout.createSequentialGroup()
                 .addGap(59, 59, 59)
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel36)
-                    .addComponent(jTextField20, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(UpdatePassengerInfoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(PassengerIDLbl)
+                    .addComponent(PassengerID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(39, 39, 39)
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel37)
-                    .addComponent(jTextField22, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(UpdatePassengerInfoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(PassengerFirstNameLbl)
+                    .addComponent(PassengerFirstName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(29, 29, 29)
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel38)
-                    .addComponent(jTextField23, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(UpdatePassengerInfoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(PassengerLastNameLbl)
+                    .addComponent(PassengerLastName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(29, 29, 29)
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel39)
-                    .addComponent(jTextField24, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(MONTH5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(DAY5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(UpdatePassengerInfoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(PassengerBirthdateLbl)
+                    .addComponent(PassengerBirthdateYear, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(PassengerBirthdateMonth, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(PassengerBirthdateDay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(29, 29, 29)
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel42)
-                    .addComponent(jLabel41)
-                    .addComponent(jTextField26, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel40)
-                    .addComponent(jTextField25, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(UpdatePassengerInfoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(PassengerPhoneLbl)
+                    .addComponent(PlusLbl)
+                    .addComponent(CountryPhoneCode, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(SpaceLbl)
+                    .addComponent(PassengerPhoneNumber, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(29, 29, 29)
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel43)
-                    .addComponent(jTextField27, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(UpdatePassengerInfoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(PassengerCountryLbl)
+                    .addComponent(PassengerCountry, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 10, Short.MAX_VALUE)
-                .addComponent(jButton1)
+                .addComponent(UpdatePassengerInfoBtn)
                 .addGap(113, 113, 113))
         );
 
-        jTabbedPane1.addTab("Update info", jPanel5);
+        GeneralPanel.addTab("Update info", UpdatePassengerInfo);
 
-        jTextField28.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jTextField28.setEnabled(false);
+        IdPassengerToFlight.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        IdPassengerToFlight.setEnabled(false);
 
-        jLabel44.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel44.setText("ID:");
+        IdPassengerToFlightLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        IdPassengerToFlightLbl.setText("ID:");
 
-        jLabel45.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel45.setText("Flight:");
+        FlightToAddLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        FlightToAddLbl.setText("Flight:");
 
-        jComboBox5.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jComboBox5.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Flight" }));
+        FlightToAdd.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        FlightToAdd.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Flight" }));
 
-        jButton12.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jButton12.setText("Add");
-        jButton12.addActionListener(new java.awt.event.ActionListener() {
+        AddPassengerToFlightBtn.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        AddPassengerToFlightBtn.setText("Add");
+        AddPassengerToFlightBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton12ActionPerformed(evt);
+                AddPassengerToFlightBtnActionPerformed(evt);
             }
         });
 
-        javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
-        jPanel6.setLayout(jPanel6Layout);
-        jPanel6Layout.setHorizontalGroup(
-            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel6Layout.createSequentialGroup()
+        javax.swing.GroupLayout AddPassengerToFlightLayout = new javax.swing.GroupLayout(AddPassengerToFlight);
+        AddPassengerToFlight.setLayout(AddPassengerToFlightLayout);
+        AddPassengerToFlightLayout.setHorizontalGroup(
+            AddPassengerToFlightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(AddPassengerToFlightLayout.createSequentialGroup()
                 .addGap(64, 64, 64)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel44)
-                    .addComponent(jLabel45))
+                .addGroup(AddPassengerToFlightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(IdPassengerToFlightLbl)
+                    .addComponent(FlightToAddLbl))
                 .addGap(79, 79, 79)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jComboBox5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextField28, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(AddPassengerToFlightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(FlightToAdd, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(IdPassengerToFlight, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(829, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel6Layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, AddPassengerToFlightLayout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jButton12, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(AddPassengerToFlightBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(509, 509, 509))
         );
-        jPanel6Layout.setVerticalGroup(
-            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel6Layout.createSequentialGroup()
+        AddPassengerToFlightLayout.setVerticalGroup(
+            AddPassengerToFlightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(AddPassengerToFlightLayout.createSequentialGroup()
                 .addGap(45, 45, 45)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel6Layout.createSequentialGroup()
+                .addGroup(AddPassengerToFlightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(AddPassengerToFlightLayout.createSequentialGroup()
                         .addGap(3, 3, 3)
-                        .addComponent(jLabel44))
-                    .addComponent(jTextField28, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(IdPassengerToFlightLbl))
+                    .addComponent(IdPassengerToFlight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(35, 35, 35)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel45)
-                    .addComponent(jComboBox5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(AddPassengerToFlightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(FlightToAddLbl)
+                    .addComponent(FlightToAdd, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 288, Short.MAX_VALUE)
-                .addComponent(jButton12, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(AddPassengerToFlightBtn, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(85, 85, 85))
         );
 
-        jTabbedPane1.addTab("Add to flight", jPanel6);
+        GeneralPanel.addTab("Add to flight", AddPassengerToFlight);
 
-        jTable1.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+        PassengerFlightsTable.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengerFlightsTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null},
                 {null, null, null},
@@ -1016,43 +1067,43 @@ public class AirportFrame extends javax.swing.JFrame {
                 return canEdit [columnIndex];
             }
         });
-        jScrollPane1.setViewportView(jTable1);
+        PassengerFlightsPane.setViewportView(PassengerFlightsTable);
 
-        jButton2.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jButton2.setText("Refresh");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        RefreshPassengersFlights.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        RefreshPassengersFlights.setText("Refresh");
+        RefreshPassengersFlights.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                RefreshPassengersFlightsActionPerformed(evt);
             }
         });
 
-        javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
-        jPanel7.setLayout(jPanel7Layout);
-        jPanel7Layout.setHorizontalGroup(
-            jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel7Layout.createSequentialGroup()
+        javax.swing.GroupLayout ShowPassengerFlightsLayout = new javax.swing.GroupLayout(ShowPassengerFlights);
+        ShowPassengerFlights.setLayout(ShowPassengerFlightsLayout);
+        ShowPassengerFlightsLayout.setHorizontalGroup(
+            ShowPassengerFlightsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(ShowPassengerFlightsLayout.createSequentialGroup()
                 .addGap(269, 269, 269)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 590, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(PassengerFlightsPane, javax.swing.GroupLayout.PREFERRED_SIZE, 590, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(291, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel7Layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, ShowPassengerFlightsLayout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jButton2)
+                .addComponent(RefreshPassengersFlights)
                 .addGap(527, 527, 527))
         );
-        jPanel7Layout.setVerticalGroup(
-            jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel7Layout.createSequentialGroup()
+        ShowPassengerFlightsLayout.setVerticalGroup(
+            ShowPassengerFlightsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(ShowPassengerFlightsLayout.createSequentialGroup()
                 .addGap(61, 61, 61)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(PassengerFlightsPane, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 29, Short.MAX_VALUE)
-                .addComponent(jButton2)
+                .addComponent(RefreshPassengersFlights)
                 .addContainerGap())
         );
 
-        jTabbedPane1.addTab("Show my flights", jPanel7);
+        GeneralPanel.addTab("Show my flights", ShowPassengerFlights);
 
-        jTable2.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jTable2.setModel(new javax.swing.table.DefaultTableModel(
+        PassengersTable.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengersTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
 
             },
@@ -1075,44 +1126,44 @@ public class AirportFrame extends javax.swing.JFrame {
                 return canEdit [columnIndex];
             }
         });
-        jScrollPane2.setViewportView(jTable2);
+        PassengersPane.setViewportView(PassengersTable);
 
-        jButton3.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jButton3.setText("Refresh");
-        jButton3.addActionListener(new java.awt.event.ActionListener() {
+        PassengersRefresh.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        PassengersRefresh.setText("Refresh");
+        PassengersRefresh.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton3ActionPerformed(evt);
+                PassengersRefreshActionPerformed(evt);
             }
         });
 
-        javax.swing.GroupLayout jPanel8Layout = new javax.swing.GroupLayout(jPanel8);
-        jPanel8.setLayout(jPanel8Layout);
-        jPanel8Layout.setHorizontalGroup(
-            jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel8Layout.createSequentialGroup()
-                .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel8Layout.createSequentialGroup()
+        javax.swing.GroupLayout ShowAllPassengersLayout = new javax.swing.GroupLayout(ShowAllPassengers);
+        ShowAllPassengers.setLayout(ShowAllPassengersLayout);
+        ShowAllPassengersLayout.setHorizontalGroup(
+            ShowAllPassengersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(ShowAllPassengersLayout.createSequentialGroup()
+                .addGroup(ShowAllPassengersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(ShowAllPassengersLayout.createSequentialGroup()
                         .addGap(489, 489, 489)
-                        .addComponent(jButton3))
-                    .addGroup(jPanel8Layout.createSequentialGroup()
+                        .addComponent(PassengersRefresh))
+                    .addGroup(ShowAllPassengersLayout.createSequentialGroup()
                         .addGap(47, 47, 47)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 1078, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(PassengersPane, javax.swing.GroupLayout.PREFERRED_SIZE, 1078, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(25, Short.MAX_VALUE))
         );
-        jPanel8Layout.setVerticalGroup(
-            jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel8Layout.createSequentialGroup()
+        ShowAllPassengersLayout.setVerticalGroup(
+            ShowAllPassengersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, ShowAllPassengersLayout.createSequentialGroup()
                 .addContainerGap(72, Short.MAX_VALUE)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(PassengersPane, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addComponent(jButton3)
+                .addComponent(PassengersRefresh)
                 .addContainerGap())
         );
 
-        jTabbedPane1.addTab("Show all passengers", jPanel8);
+        GeneralPanel.addTab("Show all passengers", ShowAllPassengers);
 
-        jTable3.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jTable3.setModel(new javax.swing.table.DefaultTableModel(
+        FlightsTable.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        FlightsTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
 
             },
@@ -1135,51 +1186,51 @@ public class AirportFrame extends javax.swing.JFrame {
                 return canEdit [columnIndex];
             }
         });
-        jScrollPane3.setViewportView(jTable3);
+        FlightsPane.setViewportView(FlightsTable);
 
-        jButton4.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jButton4.setText("Refresh");
-        jButton4.addActionListener(new java.awt.event.ActionListener() {
+        RefreshFlights.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        RefreshFlights.setText("Refresh");
+        RefreshFlights.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton4ActionPerformed(evt);
+                RefreshFlightsActionPerformed(evt);
             }
         });
 
-        javax.swing.GroupLayout jPanel9Layout = new javax.swing.GroupLayout(jPanel9);
-        jPanel9.setLayout(jPanel9Layout);
-        jPanel9Layout.setHorizontalGroup(
-            jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel9Layout.createSequentialGroup()
-                .addGroup(jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel9Layout.createSequentialGroup()
+        javax.swing.GroupLayout ShowAllFlightsLayout = new javax.swing.GroupLayout(ShowAllFlights);
+        ShowAllFlights.setLayout(ShowAllFlightsLayout);
+        ShowAllFlightsLayout.setHorizontalGroup(
+            ShowAllFlightsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(ShowAllFlightsLayout.createSequentialGroup()
+                .addGroup(ShowAllFlightsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(ShowAllFlightsLayout.createSequentialGroup()
                         .addGap(29, 29, 29)
-                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 1100, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel9Layout.createSequentialGroup()
+                        .addComponent(FlightsPane, javax.swing.GroupLayout.PREFERRED_SIZE, 1100, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(ShowAllFlightsLayout.createSequentialGroup()
                         .addGap(521, 521, 521)
-                        .addComponent(jButton4)))
+                        .addComponent(RefreshFlights)))
                 .addContainerGap(21, Short.MAX_VALUE))
         );
-        jPanel9Layout.setVerticalGroup(
-            jPanel9Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel9Layout.createSequentialGroup()
+        ShowAllFlightsLayout.setVerticalGroup(
+            ShowAllFlightsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(ShowAllFlightsLayout.createSequentialGroup()
                 .addGap(60, 60, 60)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(FlightsPane, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addComponent(jButton4)
+                .addComponent(RefreshFlights)
                 .addContainerGap(18, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab("Show all flights", jPanel9);
+        GeneralPanel.addTab("Show all flights", ShowAllFlights);
 
-        jButton5.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jButton5.setText("Refresh");
-        jButton5.addActionListener(new java.awt.event.ActionListener() {
+        RefreshPlanes.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        RefreshPlanes.setText("Refresh");
+        RefreshPlanes.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton5ActionPerformed(evt);
+                RefreshPlanesActionPerformed(evt);
             }
         });
 
-        jTable4.setModel(new javax.swing.table.DefaultTableModel(
+        PlanesTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
 
             },
@@ -1202,35 +1253,35 @@ public class AirportFrame extends javax.swing.JFrame {
                 return canEdit [columnIndex];
             }
         });
-        jScrollPane4.setViewportView(jTable4);
+        PlanesPane.setViewportView(PlanesTable);
 
-        javax.swing.GroupLayout jPanel10Layout = new javax.swing.GroupLayout(jPanel10);
-        jPanel10.setLayout(jPanel10Layout);
-        jPanel10Layout.setHorizontalGroup(
-            jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel10Layout.createSequentialGroup()
-                .addGroup(jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel10Layout.createSequentialGroup()
+        javax.swing.GroupLayout ShowAllPlanesLayout = new javax.swing.GroupLayout(ShowAllPlanes);
+        ShowAllPlanes.setLayout(ShowAllPlanesLayout);
+        ShowAllPlanesLayout.setHorizontalGroup(
+            ShowAllPlanesLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(ShowAllPlanesLayout.createSequentialGroup()
+                .addGroup(ShowAllPlanesLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(ShowAllPlanesLayout.createSequentialGroup()
                         .addGap(508, 508, 508)
-                        .addComponent(jButton5))
-                    .addGroup(jPanel10Layout.createSequentialGroup()
+                        .addComponent(RefreshPlanes))
+                    .addGroup(ShowAllPlanesLayout.createSequentialGroup()
                         .addGap(145, 145, 145)
-                        .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 816, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(PlanesPane, javax.swing.GroupLayout.PREFERRED_SIZE, 816, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(189, Short.MAX_VALUE))
         );
-        jPanel10Layout.setVerticalGroup(
-            jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel10Layout.createSequentialGroup()
+        ShowAllPlanesLayout.setVerticalGroup(
+            ShowAllPlanesLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, ShowAllPlanesLayout.createSequentialGroup()
                 .addContainerGap(45, Short.MAX_VALUE)
-                .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(PlanesPane, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(34, 34, 34)
-                .addComponent(jButton5)
+                .addComponent(RefreshPlanes)
                 .addGap(17, 17, 17))
         );
 
-        jTabbedPane1.addTab("Show all planes", jPanel10);
+        GeneralPanel.addTab("Show all planes", ShowAllPlanes);
 
-        jTable5.setModel(new javax.swing.table.DefaultTableModel(
+        LocationsTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
 
             },
@@ -1253,129 +1304,129 @@ public class AirportFrame extends javax.swing.JFrame {
                 return canEdit [columnIndex];
             }
         });
-        jScrollPane5.setViewportView(jTable5);
+        LocationsPane.setViewportView(LocationsTable);
 
-        jButton6.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jButton6.setText("Refresh");
-        jButton6.addActionListener(new java.awt.event.ActionListener() {
+        RefreshLocations.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        RefreshLocations.setText("Refresh");
+        RefreshLocations.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton6ActionPerformed(evt);
+                RefreshLocationsActionPerformed(evt);
             }
         });
 
-        javax.swing.GroupLayout jPanel11Layout = new javax.swing.GroupLayout(jPanel11);
-        jPanel11.setLayout(jPanel11Layout);
-        jPanel11Layout.setHorizontalGroup(
-            jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel11Layout.createSequentialGroup()
-                .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel11Layout.createSequentialGroup()
+        javax.swing.GroupLayout ShowAllLocationsLayout = new javax.swing.GroupLayout(ShowAllLocations);
+        ShowAllLocations.setLayout(ShowAllLocationsLayout);
+        ShowAllLocationsLayout.setHorizontalGroup(
+            ShowAllLocationsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(ShowAllLocationsLayout.createSequentialGroup()
+                .addGroup(ShowAllLocationsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(ShowAllLocationsLayout.createSequentialGroup()
                         .addGap(508, 508, 508)
-                        .addComponent(jButton6))
-                    .addGroup(jPanel11Layout.createSequentialGroup()
+                        .addComponent(RefreshLocations))
+                    .addGroup(ShowAllLocationsLayout.createSequentialGroup()
                         .addGap(226, 226, 226)
-                        .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, 652, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(LocationsPane, javax.swing.GroupLayout.PREFERRED_SIZE, 652, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(272, Short.MAX_VALUE))
         );
-        jPanel11Layout.setVerticalGroup(
-            jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel11Layout.createSequentialGroup()
+        ShowAllLocationsLayout.setVerticalGroup(
+            ShowAllLocationsLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, ShowAllLocationsLayout.createSequentialGroup()
                 .addContainerGap(48, Short.MAX_VALUE)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(LocationsPane, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(31, 31, 31)
-                .addComponent(jButton6)
+                .addComponent(RefreshLocations)
                 .addGap(17, 17, 17))
         );
 
-        jTabbedPane1.addTab("Show all locations", jPanel11);
+        GeneralPanel.addTab("Show all locations", ShowAllLocations);
 
-        jComboBox6.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jComboBox6.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Hour" }));
+        HourDelay.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        HourDelay.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Hour" }));
 
-        jLabel46.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel46.setText("Hours:");
+        HoursDelayLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        HoursDelayLbl.setText("Hours:");
 
-        jLabel47.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel47.setText("ID:");
+        IdDelayLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        IdDelayLbl.setText("ID:");
 
-        jComboBox7.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jComboBox7.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "ID" }));
+        IdDelay.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        IdDelay.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "ID" }));
 
-        jLabel48.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jLabel48.setText("Minutes:");
+        MinutesDelayLbl.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        MinutesDelayLbl.setText("Minutes:");
 
-        jComboBox8.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jComboBox8.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Minute" }));
+        MinutesDelay.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        MinutesDelay.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Minute" }));
 
-        jButton7.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
-        jButton7.setText("Delay");
-        jButton7.addActionListener(new java.awt.event.ActionListener() {
+        DelayBtn.setFont(new java.awt.Font("Yu Gothic UI", 0, 18)); // NOI18N
+        DelayBtn.setText("Delay");
+        DelayBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton7ActionPerformed(evt);
+                DelayBtnActionPerformed(evt);
             }
         });
 
-        javax.swing.GroupLayout jPanel12Layout = new javax.swing.GroupLayout(jPanel12);
-        jPanel12.setLayout(jPanel12Layout);
-        jPanel12Layout.setHorizontalGroup(
-            jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel12Layout.createSequentialGroup()
+        javax.swing.GroupLayout DelayFlightLayout = new javax.swing.GroupLayout(DelayFlight);
+        DelayFlight.setLayout(DelayFlightLayout);
+        DelayFlightLayout.setHorizontalGroup(
+            DelayFlightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(DelayFlightLayout.createSequentialGroup()
                 .addGap(94, 94, 94)
-                .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel12Layout.createSequentialGroup()
-                        .addComponent(jLabel48)
+                .addGroup(DelayFlightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(DelayFlightLayout.createSequentialGroup()
+                        .addComponent(MinutesDelayLbl)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jComboBox8, javax.swing.GroupLayout.PREFERRED_SIZE, 109, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel12Layout.createSequentialGroup()
-                        .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel47)
-                            .addComponent(jLabel46))
+                        .addComponent(MinutesDelay, javax.swing.GroupLayout.PREFERRED_SIZE, 109, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(DelayFlightLayout.createSequentialGroup()
+                        .addGroup(DelayFlightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(IdDelayLbl)
+                            .addComponent(HoursDelayLbl))
                         .addGap(79, 79, 79)
-                        .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jComboBox6, 0, 105, Short.MAX_VALUE)
-                            .addComponent(jComboBox7, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                        .addGroup(DelayFlightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(HourDelay, 0, 105, Short.MAX_VALUE)
+                            .addComponent(IdDelay, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                 .addGap(820, 820, 820))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel12Layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, DelayFlightLayout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jButton7)
+                .addComponent(DelayBtn)
                 .addGap(531, 531, 531))
         );
-        jPanel12Layout.setVerticalGroup(
-            jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel12Layout.createSequentialGroup()
+        DelayFlightLayout.setVerticalGroup(
+            DelayFlightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(DelayFlightLayout.createSequentialGroup()
                 .addGap(26, 26, 26)
-                .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel47)
-                    .addComponent(jComboBox7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(DelayFlightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(IdDelayLbl)
+                    .addComponent(IdDelay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(32, 32, 32)
-                .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel46)
-                    .addComponent(jComboBox6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(DelayFlightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(HoursDelayLbl)
+                    .addComponent(HourDelay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(32, 32, 32)
-                .addGroup(jPanel12Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel48)
-                    .addComponent(jComboBox8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(DelayFlightLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(MinutesDelayLbl)
+                    .addComponent(MinutesDelay, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 307, Short.MAX_VALUE)
-                .addComponent(jButton7)
+                .addComponent(DelayBtn)
                 .addGap(33, 33, 33))
         );
 
-        jTabbedPane1.addTab("Delay flight", jPanel12);
+        GeneralPanel.addTab("Delay flight", DelayFlight);
 
-        panelRound1.add(jTabbedPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 41, 1150, 620));
+        panelRound1.add(GeneralPanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 41, 1150, 620));
 
-        javax.swing.GroupLayout panelRound3Layout = new javax.swing.GroupLayout(panelRound3);
-        panelRound3.setLayout(panelRound3Layout);
-        panelRound3Layout.setHorizontalGroup(
-            panelRound3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        javax.swing.GroupLayout BottomPanelLayout = new javax.swing.GroupLayout(BottomPanel);
+        BottomPanel.setLayout(BottomPanelLayout);
+        BottomPanelLayout.setHorizontalGroup(
+            BottomPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 1150, Short.MAX_VALUE)
         );
-        panelRound3Layout.setVerticalGroup(
-            panelRound3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        BottomPanelLayout.setVerticalGroup(
+            BottomPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 36, Short.MAX_VALUE)
         );
 
-        panelRound1.add(panelRound3, new org.netbeans.lib.awtextra.AbsoluteConstraints(-2, 660, 1150, -1));
+        panelRound1.add(BottomPanel, new org.netbeans.lib.awtextra.AbsoluteConstraints(-2, 660, 1150, -1));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -1392,14 +1443,14 @@ public class AirportFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
 
-    private void panelRound2MousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_panelRound2MousePressed
+    private void TopPanelMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_TopPanelMousePressed
         x = evt.getX();
         y = evt.getY();
-    }//GEN-LAST:event_panelRound2MousePressed
+    }//GEN-LAST:event_TopPanelMousePressed
 
-    private void panelRound2MouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_panelRound2MouseDragged
+    private void TopPanelMouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_TopPanelMouseDragged
         this.setLocation(this.getLocation().x + evt.getX() - x, this.getLocation().y + evt.getY() - y);
-    }//GEN-LAST:event_panelRound2MouseDragged
+    }//GEN-LAST:event_TopPanelMouseDragged
 
     private void administratorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_administratorActionPerformed
         if (user.isSelected()) {
@@ -1407,106 +1458,106 @@ public class AirportFrame extends javax.swing.JFrame {
             userSelect.setSelectedIndex(0);
 
         }
-        for (int i = 1; i < jTabbedPane1.getTabCount(); i++) {
-                jTabbedPane1.setEnabledAt(i, true);
+        for (int i = 1; i < GeneralPanel.getTabCount(); i++) {
+            GeneralPanel.setEnabledAt(i, true);
         }
-        jTabbedPane1.setEnabledAt(5, false);
-        jTabbedPane1.setEnabledAt(6, false);
+        GeneralPanel.setEnabledAt(5, false);
+        GeneralPanel.setEnabledAt(6, false);
     }//GEN-LAST:event_administratorActionPerformed
 
     private void userActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_userActionPerformed
         if (administrator.isSelected()) {
             administrator.setSelected(false);
         }
-        for (int i = 1; i < jTabbedPane1.getTabCount(); i++) {
+        for (int i = 1; i < GeneralPanel.getTabCount(); i++) {
 
-            jTabbedPane1.setEnabledAt(i, false);
+            GeneralPanel.setEnabledAt(i, false);
 
         }
-        jTabbedPane1.setEnabledAt(9, true);
-        jTabbedPane1.setEnabledAt(5, true);
-        jTabbedPane1.setEnabledAt(6, true);
-        jTabbedPane1.setEnabledAt(7, true);
-        jTabbedPane1.setEnabledAt(11, true);
+        GeneralPanel.setEnabledAt(9, true);
+        GeneralPanel.setEnabledAt(5, true);
+        GeneralPanel.setEnabledAt(6, true);
+        GeneralPanel.setEnabledAt(7, true);
+        GeneralPanel.setEnabledAt(11, true);
     }//GEN-LAST:event_userActionPerformed
 
-    private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
+    private void RegisterPassengerBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RegisterPassengerBtnActionPerformed
         // TODO add your handling code here:
-        long id = Long.parseLong(jTextField2.getText());
-        String firstname = jTextField7.getText();
-        String lastname = jTextField6.getText();
-        int year = Integer.parseInt(jTextField3.getText());
-        int month = Integer.parseInt(MONTH.getItemAt(MONTH.getSelectedIndex()));
-        int day = Integer.parseInt(DAY.getItemAt(DAY.getSelectedIndex()));
-        int phoneCode = Integer.parseInt(jTextField1.getText());
-        long phone = Long.parseLong(jTextField5.getText());
-        String country = jTextField4.getText();
+        long id = Long.parseLong(PassengerBaseID.getText());
+        String firstname = PassengerBaseFirstName.getText();
+        String lastname = PassengerBaseLastName.getText();
+        int year = Integer.parseInt(PassengerBaseBirthdateYear.getText());
+        int month = Integer.parseInt(PassengerBaseBirthdateMonth.getItemAt(PassengerBaseBirthdateMonth.getSelectedIndex()));
+        int day = Integer.parseInt(PassengerBaseBirthdateDay.getItemAt(PassengerBaseBirthdateDay.getSelectedIndex()));
+        int phoneCode = Integer.parseInt(BaseCountryCode.getText());
+        long phone = Long.parseLong(PassengerBasePhone.getText());
+        String country = PassengerBaseCountry.getText();
 
         LocalDate birthDate = LocalDate.of(year, month, day);
 
-        this.passengers.add(new Passenger(id, firstname, lastname, birthDate, phoneCode, phone, country));
+        passengerController.createPassenger(new PassengerDTO(id, firstname, lastname, birthDate, phoneCode, phone, country));
         this.userSelect.addItem("" + id);
-    }//GEN-LAST:event_jButton8ActionPerformed
+    }//GEN-LAST:event_RegisterPassengerBtnActionPerformed
 
-    private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
+    private void CreatePlaneBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CreatePlaneBtnActionPerformed
         // TODO add your handling code here:
-        String id = jTextField8.getText();
-        String brand = jTextField9.getText();
-        String model = jTextField10.getText();
-        int maxCapacity = Integer.parseInt(jTextField11.getText());
-        String airline = jTextField12.getText();
+        String id = PlaneID.getText();
+        String brand = PlaneBrand.getText();
+        String model = PlaneModel.getText();
+        int maxCapacity = Integer.parseInt(PlaneMaxCapacity.getText());
+        String airline = PlaneAirline.getText();
 
-        this.planes.add(new Plane(id, brand, model, maxCapacity, airline));
+        planeController.createPlane(new PlaneDTO(id, brand, model, maxCapacity, airline));
 
-        this.jComboBox1.addItem(id);
-    }//GEN-LAST:event_jButton9ActionPerformed
+        this.FlightPlane.addItem(id);
+    }//GEN-LAST:event_CreatePlaneBtnActionPerformed
 
-    private void jButton10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton10ActionPerformed
+    private void CreateLocationBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CreateLocationBtnActionPerformed
         // TODO add your handling code here:
-        String id = jTextField13.getText();
-        String name = jTextField14.getText();
-        String city = jTextField15.getText();
-        String country = jTextField16.getText();
-        double latitude = Double.parseDouble(jTextField17.getText());
-        double longitude = Double.parseDouble(jTextField18.getText());
+        String id = AirportID.getText();
+        String name = AirportName.getText();
+        String city = AirportCity.getText();
+        String country = AirportCountry.getText();
+        double latitude = Double.parseDouble(AirportLatitude.getText());
+        double longitude = Double.parseDouble(AirportLongitude.getText());
 
-        this.locations.add(new Location(id, name, city, country, latitude, longitude));
+        locationController.createLocation(new LocationDTO(id, name, city, country, latitude, longitude));
 
-        this.jComboBox2.addItem(id);
-        this.jComboBox3.addItem(id);
-        this.jComboBox4.addItem(id);
-    }//GEN-LAST:event_jButton10ActionPerformed
+        this.DepartureLocation.addItem(id);
+        this.ArrivalLocation.addItem(id);
+        this.ScaleLocation.addItem(id);
+    }//GEN-LAST:event_CreateLocationBtnActionPerformed
 
-    private void jButton11ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton11ActionPerformed
+    private void CreateFlightBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CreateFlightBtnActionPerformed
         // TODO add your handling code here:
-        String id = jTextField19.getText();
-        String planeId = jComboBox1.getItemAt(jComboBox1.getSelectedIndex());
-        String departureLocationId = jComboBox2.getItemAt(jComboBox2.getSelectedIndex());
-        String arrivalLocationId = jComboBox3.getItemAt(jComboBox3.getSelectedIndex());
-        String scaleLocationId = jComboBox4.getItemAt(jComboBox4.getSelectedIndex());
-        int year = Integer.parseInt(jTextField21.getText());
-        int month = Integer.parseInt(MONTH1.getItemAt(MONTH1.getSelectedIndex()));
-        int day = Integer.parseInt(DAY1.getItemAt(DAY1.getSelectedIndex()));
-        int hour = Integer.parseInt(MONTH2.getItemAt(MONTH2.getSelectedIndex()));
-        int minutes = Integer.parseInt(DAY2.getItemAt(DAY2.getSelectedIndex()));
-        int hoursDurationsArrival = Integer.parseInt(MONTH3.getItemAt(MONTH3.getSelectedIndex()));
-        int minutesDurationsArrival = Integer.parseInt(DAY3.getItemAt(DAY3.getSelectedIndex()));
-        int hoursDurationsScale = Integer.parseInt(MONTH4.getItemAt(MONTH4.getSelectedIndex()));
-        int minutesDurationsScale = Integer.parseInt(DAY4.getItemAt(DAY4.getSelectedIndex()));
+        String id = FlightID.getText();
+        String planeId = FlightPlane.getItemAt(FlightPlane.getSelectedIndex());
+        String departureLocationId = DepartureLocation.getItemAt(DepartureLocation.getSelectedIndex());
+        String arrivalLocationId = ArrivalLocation.getItemAt(ArrivalLocation.getSelectedIndex());
+        String scaleLocationId = ScaleLocation.getItemAt(ScaleLocation.getSelectedIndex());
+        int year = Integer.parseInt(DepartureDateYear.getText());
+        int month = Integer.parseInt(DepartureDateMonth.getItemAt(DepartureDateMonth.getSelectedIndex()));
+        int day = Integer.parseInt(DepartureDateDay.getItemAt(DepartureDateDay.getSelectedIndex()));
+        int hour = Integer.parseInt(DepartureDateHour.getItemAt(DepartureDateHour.getSelectedIndex()));
+        int minutes = Integer.parseInt(DepartureDateMinute.getItemAt(DepartureDateMinute.getSelectedIndex()));
+        int hoursDurationsArrival = Integer.parseInt(ArrivalLocationHour.getItemAt(ArrivalLocationHour.getSelectedIndex()));
+        int minutesDurationsArrival = Integer.parseInt(ArrivalLocationMinute.getItemAt(ArrivalLocationMinute.getSelectedIndex()));
+        int hoursDurationsScale = Integer.parseInt(ScaleLocationHour.getItemAt(ScaleLocationHour.getSelectedIndex()));
+        int minutesDurationsScale = Integer.parseInt(ScaleLocationMinute.getItemAt(ScaleLocationMinute.getSelectedIndex()));
 
         LocalDateTime departureDate = LocalDateTime.of(year, month, day, hour, minutes);
 
-        Plane plane = null;
-        for (Plane p : this.planes) {
+        PlaneDTO plane = null;
+        for (PlaneDTO p : planeController.getAllPlane()) {
             if (planeId.equals(p.getId())) {
                 plane = p;
             }
         }
 
-        Location departure = null;
-        Location arrival = null;
-        Location scale = null;
-        for (Location location : this.locations) {
+        LocationDTO departure = null;
+        LocationDTO arrival = null;
+        LocationDTO scale = null;
+        for (LocationDTO location : locationController.getAllLocation()) {
             if (departureLocationId.equals(location.getAirportId())) {
                 departure = location;
             }
@@ -1519,152 +1570,163 @@ public class AirportFrame extends javax.swing.JFrame {
         }
 
         if (scale == null) {
-            this.flights.add(new Flight(id, plane, departure, arrival, departureDate, hoursDurationsArrival, minutesDurationsArrival));
+            flightController.createFlight(new FlightDTO(id, plane.getId(), departure.getAirportId(), null, arrival.getAirportId(), departureDate, hoursDurationsArrival, minutesDurationsArrival, hoursDurationsScale, minutesDurationsScale));
         } else {
-            this.flights.add(new Flight(id, plane, departure, scale, arrival, departureDate, hoursDurationsArrival, minutesDurationsArrival, hoursDurationsScale, minutesDurationsScale));
+            flightController.createFlight(new FlightDTO(id, plane.getId(), departure.getAirportId(), scale.getAirportId(), arrival.getAirportId(), departureDate, hoursDurationsArrival, minutesDurationsArrival, hoursDurationsScale, minutesDurationsScale));
         }
 
-        this.jComboBox5.addItem(id);
-    }//GEN-LAST:event_jButton11ActionPerformed
+        this.FlightToAdd.addItem(id);
+    }//GEN-LAST:event_CreateFlightBtnActionPerformed
 
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+    private void UpdatePassengerInfoBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpdatePassengerInfoBtnActionPerformed
         // TODO add your handling code here:
-        long id = Long.parseLong(jTextField20.getText());
-        String firstname = jTextField22.getText();
-        String lastname = jTextField23.getText();
-        int year = Integer.parseInt(jTextField24.getText());
-        int month = Integer.parseInt(MONTH.getItemAt(MONTH5.getSelectedIndex()));
-        int day = Integer.parseInt(DAY.getItemAt(DAY5.getSelectedIndex()));
-        int phoneCode = Integer.parseInt(jTextField26.getText());
-        long phone = Long.parseLong(jTextField25.getText());
-        String country = jTextField27.getText();
+        long id = Long.parseLong(PassengerID.getText());
+        String firstname = PassengerFirstName.getText();
+        String lastname = PassengerLastName.getText();
+        int year = Integer.parseInt(PassengerBirthdateYear.getText());
+        int month = Integer.parseInt(PassengerBaseBirthdateMonth.getItemAt(PassengerBirthdateMonth.getSelectedIndex()));
+        int day = Integer.parseInt(PassengerBaseBirthdateDay.getItemAt(PassengerBirthdateDay.getSelectedIndex()));
+        int phoneCode = Integer.parseInt(CountryPhoneCode.getText());
+        long phone = Long.parseLong(PassengerPhoneNumber.getText());
+        String country = PassengerCountry.getText();
 
         LocalDate birthDate = LocalDate.of(year, month, day);
 
-        Passenger passenger = null;
-        for (Passenger p : this.passengers) {
+        PassengerDTO passenger = null;
+        for (PassengerDTO p : passengerController.getAllPassengers()) {
             if (p.getId() == id) {
                 passenger = p;
             }
         }
 
-        passenger.setFirstname(firstname);
-        passenger.setLastname(lastname);
+        passenger.setFirstName(firstname);
+        passenger.setLastName(lastname);
         passenger.setBirthDate(birthDate);
         passenger.setCountryPhoneCode(phoneCode);
         passenger.setPhone(phone);
         passenger.setCountry(country);
-    }//GEN-LAST:event_jButton1ActionPerformed
 
-    private void jButton12ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton12ActionPerformed
+        passengerController.updatePassenger(passenger);
+    }//GEN-LAST:event_UpdatePassengerInfoBtnActionPerformed
+
+    private void AddPassengerToFlightBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddPassengerToFlightBtnActionPerformed
         // TODO add your handling code here:
-        long passengerId = Long.parseLong(jTextField28.getText());
-        String flightId = jComboBox5.getItemAt(jComboBox5.getSelectedIndex());
+        long passengerId = Long.parseLong(IdPassengerToFlight.getText());
+        String flightId = FlightToAdd.getItemAt(FlightToAdd.getSelectedIndex());
 
-        Passenger passenger = null;
-        Flight flight = null;
+        PassengerDTO passenger = null;
+        FlightDTO flight = null;
 
-        for (Passenger p : this.passengers) {
+        for (PassengerDTO p : passengerController.getAllPassengers()) {
             if (p.getId() == passengerId) {
                 passenger = p;
+                break;
             }
         }
 
-        for (Flight f : this.flights) {
+        for (FlightDTO f : flightController.getAllFlight()) {
             if (flightId.equals(f.getId())) {
                 flight = f;
+                break;
             }
         }
 
-        passenger.addFlight(flight);
-        flight.addPassenger(passenger);
-    }//GEN-LAST:event_jButton12ActionPerformed
+        if (passenger == null) {
+            System.out.println("Pasajero no encontrado.");
+            return;
+        }
+        if (flight == null) {
+            System.out.println("Vuelo no encontrado.");
+            return;
+        }
 
-    private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
+        passengerController.addFlightToPassenger(passenger, flight);
+    }//GEN-LAST:event_AddPassengerToFlightBtnActionPerformed
+
+    private void DelayBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DelayBtnActionPerformed
         // TODO add your handling code here:
-        String flightId = jComboBox7.getItemAt(jComboBox7.getSelectedIndex());
-        int hours = Integer.parseInt(jComboBox6.getItemAt(jComboBox6.getSelectedIndex()));
-        int minutes = Integer.parseInt(jComboBox8.getItemAt(jComboBox8.getSelectedIndex()));
+        String flightId = IdDelay.getItemAt(IdDelay.getSelectedIndex());
+        int hours = Integer.parseInt(HourDelay.getItemAt(HourDelay.getSelectedIndex()));
+        int minutes = Integer.parseInt(MinutesDelay.getItemAt(MinutesDelay.getSelectedIndex()));
 
-        Flight flight = null;
-        for (Flight f : this.flights) {
+        FlightDTO flight = null;
+        for (FlightDTO f : flightController.getAllFlight()) {
             if (flightId.equals(f.getId())) {
                 flight = f;
             }
         }
+        flightController.delay(flight, hours, minutes);
+    }//GEN-LAST:event_DelayBtnActionPerformed
 
-        flight.delay(hours, minutes);
-    }//GEN-LAST:event_jButton7ActionPerformed
-
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+    private void RefreshPassengersFlightsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RefreshPassengersFlightsActionPerformed
         // TODO add your handling code here:
         long passengerId = Long.parseLong(userSelect.getItemAt(userSelect.getSelectedIndex()));
 
-        Passenger passenger = null;
-        for (Passenger p : this.passengers) {
+        PassengerDTO passenger = null;
+        for (PassengerDTO p : passengerController.getAllPassengers()) {
             if (p.getId() == passengerId) {
                 passenger = p;
+                break;
             }
         }
 
-        ArrayList<Flight> flights = passenger.getFlights();
-        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        ArrayList<FlightDTO> flights = passengerController.getAllFlights(passenger);
+        DefaultTableModel model = (DefaultTableModel) PassengerFlightsTable.getModel();
         model.setRowCount(0);
-        for (Flight flight : flights) {
-            model.addRow(new Object[]{flight.getId(), flight.getDepartureDate(), flight.calculateArrivalDate()});
+        for (FlightDTO flight : flights) {
+            model.addRow(new Object[]{flight.getId(), flight.getDepartureDate(), flightController.calculateArrivalDate(flight)});
         }
-    }//GEN-LAST:event_jButton2ActionPerformed
+    }//GEN-LAST:event_RefreshPassengersFlightsActionPerformed
 
-    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+    private void PassengersRefreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PassengersRefreshActionPerformed
         // TODO add your handling code here:
-        DefaultTableModel model = (DefaultTableModel) jTable2.getModel();
+        DefaultTableModel model = (DefaultTableModel) PassengersTable.getModel();
         model.setRowCount(0);
-        for (Passenger passenger : this.passengers) {
-            model.addRow(new Object[]{passenger.getId(), passenger.getFullname(), passenger.getBirthDate(), passenger.calculateAge(), passenger.generateFullPhone(), passenger.getCountry(), passenger.getNumFlights()});
+        for (PassengerDTO passenger : passengerController.getAllPassengers()) {
+            model.addRow(new Object[]{passenger.getId(), passenger.getFirstName() + " " + passenger.getLastName(), passenger.getBirthDate(), passengerController.calculateAge(passenger), passengerController.generateFullPhone(passenger), passenger.getCountry(), passengerController.getNumFlights(passenger)});
         }
-    }//GEN-LAST:event_jButton3ActionPerformed
+    }//GEN-LAST:event_PassengersRefreshActionPerformed
 
-    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+    private void RefreshFlightsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RefreshFlightsActionPerformed
         // TODO add your handling code here:
-        DefaultTableModel model = (DefaultTableModel) jTable3.getModel();
+        DefaultTableModel model = (DefaultTableModel) FlightsTable.getModel();
         model.setRowCount(0);
-        for (Flight flight : this.flights) {
-            model.addRow(new Object[]{flight.getId(), flight.getDepartureLocation().getAirportId(), flight.getArrivalLocation().getAirportId(), (flight.getScaleLocation() == null ? "-" : flight.getScaleLocation().getAirportId()), flight.getDepartureDate(), flight.calculateArrivalDate(), flight.getPlane().getId(), flight.getNumPassengers()});
+        for (FlightDTO flight : flightController.getAllFlight()) {
+            model.addRow(new Object[]{flight.getId(), flightController.getDepartureLocation(flight).getAirportId(), flightController.getArrivalLocation(flight).getAirportId(), (flightController.getScaleLocation(flight) == null ? "-" : flightController.getScaleLocation(flight).getAirportId()), flight.getDepartureDate(), flightController.calculateArrivalDate(flight), flightController.getPlane(flight).getId(), flightController.getNumPassengers(flight)});
         }
-    }//GEN-LAST:event_jButton4ActionPerformed
+    }//GEN-LAST:event_RefreshFlightsActionPerformed
 
-    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+    private void RefreshPlanesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RefreshPlanesActionPerformed
         // TODO add your handling code here:
-        DefaultTableModel model = (DefaultTableModel) jTable4.getModel();
+        DefaultTableModel model = (DefaultTableModel) PlanesTable.getModel();
         model.setRowCount(0);
-        for (Plane plane : this.planes) {
-            model.addRow(new Object[]{plane.getId(), plane.getBrand(), plane.getModel(), plane.getMaxCapacity(), plane.getAirline(), plane.getNumFlights()});
+        for (PlaneDTO plane : planeController.getAllPlane()) {
+            model.addRow(new Object[]{plane.getId(), plane.getBrand(), plane.getModel(), plane.getMaxCapacity(), plane.getAirline(), planeController.getNumFlights(plane)});
         }
-    }//GEN-LAST:event_jButton5ActionPerformed
+    }//GEN-LAST:event_RefreshPlanesActionPerformed
 
-    private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
+    private void RefreshLocationsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RefreshLocationsActionPerformed
         // TODO add your handling code here:
-        DefaultTableModel model = (DefaultTableModel) jTable5.getModel();
+        DefaultTableModel model = (DefaultTableModel) LocationsTable.getModel();
         model.setRowCount(0);
-        for (Location location : this.locations) {
+        for (LocationDTO location : locationController.getAllLocation()) {
             model.addRow(new Object[]{location.getAirportId(), location.getAirportName(), location.getAirportCity(), location.getAirportCountry()});
         }
-    }//GEN-LAST:event_jButton6ActionPerformed
+    }//GEN-LAST:event_RefreshLocationsActionPerformed
 
-    private void jButton13ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton13ActionPerformed
+    private void ExitBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExitBtnActionPerformed
         System.exit(0);
-    }//GEN-LAST:event_jButton13ActionPerformed
+    }//GEN-LAST:event_ExitBtnActionPerformed
 
     private void userSelectActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_userSelectActionPerformed
         try {
             String id = userSelect.getSelectedItem().toString();
-            if (! id.equals(userSelect.getItemAt(0))) {
-                jTextField20.setText(id);
-                jTextField28.setText(id);
-            }
-            else{
-                jTextField20.setText("");
-                jTextField28.setText("");
+            if (!id.equals(userSelect.getItemAt(0))) {
+                PassengerID.setText(id);
+                IdPassengerToFlight.setText(id);
+            } else {
+                PassengerID.setText("");
+                IdPassengerToFlight.setText("");
             }
         } catch (Exception e) {
         }
@@ -1690,143 +1752,143 @@ public class AirportFrame extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JComboBox<String> DAY;
-    private javax.swing.JComboBox<String> DAY1;
-    private javax.swing.JComboBox<String> DAY2;
-    private javax.swing.JComboBox<String> DAY3;
-    private javax.swing.JComboBox<String> DAY4;
-    private javax.swing.JComboBox<String> DAY5;
-    private javax.swing.JComboBox<String> MONTH;
-    private javax.swing.JComboBox<String> MONTH1;
-    private javax.swing.JComboBox<String> MONTH2;
-    private javax.swing.JComboBox<String> MONTH3;
-    private javax.swing.JComboBox<String> MONTH4;
-    private javax.swing.JComboBox<String> MONTH5;
+    private javax.swing.JPanel AddPassengerToFlight;
+    private javax.swing.JButton AddPassengerToFlightBtn;
+    private javax.swing.JPanel AirplaneRegister;
+    private javax.swing.JTextField AirportCity;
+    private javax.swing.JLabel AirportCityLbl;
+    private javax.swing.JTextField AirportCountry;
+    private javax.swing.JLabel AirportCountryLbl;
+    private javax.swing.JTextField AirportID;
+    private javax.swing.JLabel AirportIDLbl;
+    private javax.swing.JTextField AirportLatitude;
+    private javax.swing.JLabel AirportLatitudeLbl;
+    private javax.swing.JTextField AirportLongitude;
+    private javax.swing.JLabel AirportLongitudeLbl;
+    private javax.swing.JTextField AirportName;
+    private javax.swing.JLabel AirportNameLbl;
+    private javax.swing.JComboBox<String> ArrivalLocation;
+    private javax.swing.JLabel ArrivalLocationDUrationLbl;
+    private javax.swing.JComboBox<String> ArrivalLocationHour;
+    private javax.swing.JLabel ArrivalLocationLbl;
+    private javax.swing.JComboBox<String> ArrivalLocationMinute;
+    private javax.swing.JLabel ArrivalLocationSpace;
+    private javax.swing.JTextField BaseCountryCode;
+    private airport.PanelRound BottomPanel;
+    private javax.swing.JTextField CountryPhoneCode;
+    private javax.swing.JButton CreateFlightBtn;
+    private javax.swing.JButton CreateLocationBtn;
+    private javax.swing.JButton CreatePlaneBtn;
+    private javax.swing.JButton DelayBtn;
+    private javax.swing.JPanel DelayFlight;
+    private javax.swing.JComboBox<String> DepartureDateDay;
+    private javax.swing.JComboBox<String> DepartureDateHour;
+    private javax.swing.JLabel DepartureDateLbl;
+    private javax.swing.JComboBox<String> DepartureDateMinute;
+    private javax.swing.JComboBox<String> DepartureDateMonth;
+    private javax.swing.JLabel DepartureDateSpace1;
+    private javax.swing.JLabel DepartureDateSpace2;
+    private javax.swing.JLabel DepartureDateSpace3;
+    private javax.swing.JLabel DepartureDateSpace4;
+    private javax.swing.JTextField DepartureDateYear;
+    private javax.swing.JComboBox<String> DepartureLocation;
+    private javax.swing.JLabel DepartureLocationLbl;
+    private javax.swing.JButton ExitBtn;
+    private javax.swing.JTextField FlightID;
+    private javax.swing.JLabel FlightIDLbl;
+    private javax.swing.JComboBox<String> FlightPlane;
+    private javax.swing.JLabel FlightPlaneLbl;
+    private javax.swing.JPanel FlightRegister;
+    private javax.swing.JComboBox<String> FlightToAdd;
+    private javax.swing.JLabel FlightToAddLbl;
+    private javax.swing.JScrollPane FlightsPane;
+    private javax.swing.JTable FlightsTable;
+    private javax.swing.JTabbedPane GeneralPanel;
+    private javax.swing.JComboBox<String> HourDelay;
+    private javax.swing.JLabel HoursDelayLbl;
+    private javax.swing.JComboBox<String> IdDelay;
+    private javax.swing.JLabel IdDelayLbl;
+    private javax.swing.JTextField IdPassengerToFlight;
+    private javax.swing.JLabel IdPassengerToFlightLbl;
+    private javax.swing.JPanel LocationRegister;
+    private javax.swing.JScrollPane LocationsPane;
+    private javax.swing.JTable LocationsTable;
+    private javax.swing.JComboBox<String> MinutesDelay;
+    private javax.swing.JLabel MinutesDelayLbl;
+    private javax.swing.JComboBox<String> PassengerBaseBirthdateDay;
+    private javax.swing.JLabel PassengerBaseBirthdateLbl;
+    private javax.swing.JComboBox<String> PassengerBaseBirthdateMonth;
+    private javax.swing.JLabel PassengerBaseBirthdateSpace1;
+    private javax.swing.JLabel PassengerBaseBirthdateSpace2;
+    private javax.swing.JTextField PassengerBaseBirthdateYear;
+    private javax.swing.JTextField PassengerBaseCountry;
+    private javax.swing.JLabel PassengerBaseCountryLbl;
+    private javax.swing.JTextField PassengerBaseFirstName;
+    private javax.swing.JLabel PassengerBaseFirstNameLbl;
+    private javax.swing.JTextField PassengerBaseID;
+    private javax.swing.JLabel PassengerBaseIDLbl;
+    private javax.swing.JTextField PassengerBaseLastName;
+    private javax.swing.JLabel PassengerBaseLastNameLbl;
+    private javax.swing.JTextField PassengerBasePhone;
+    private javax.swing.JLabel PassengerBasePhoneLbl;
+    private javax.swing.JLabel PassengerBasePhonePlus;
+    private javax.swing.JLabel PassengerBasePhoneSpace;
+    private javax.swing.JComboBox<String> PassengerBirthdateDay;
+    private javax.swing.JLabel PassengerBirthdateLbl;
+    private javax.swing.JComboBox<String> PassengerBirthdateMonth;
+    private javax.swing.JTextField PassengerBirthdateYear;
+    private javax.swing.JTextField PassengerCountry;
+    private javax.swing.JLabel PassengerCountryLbl;
+    private javax.swing.JTextField PassengerFirstName;
+    private javax.swing.JLabel PassengerFirstNameLbl;
+    private javax.swing.JScrollPane PassengerFlightsPane;
+    private javax.swing.JTable PassengerFlightsTable;
+    private javax.swing.JTextField PassengerID;
+    private javax.swing.JLabel PassengerIDLbl;
+    private javax.swing.JTextField PassengerLastName;
+    private javax.swing.JLabel PassengerLastNameLbl;
+    private javax.swing.JLabel PassengerPhoneLbl;
+    private javax.swing.JTextField PassengerPhoneNumber;
+    private javax.swing.JPanel PassengerRegister;
+    private javax.swing.JScrollPane PassengersPane;
+    private javax.swing.JButton PassengersRefresh;
+    private javax.swing.JTable PassengersTable;
+    private javax.swing.JTextField PlaneAirline;
+    private javax.swing.JLabel PlaneAirlineLbl;
+    private javax.swing.JTextField PlaneBrand;
+    private javax.swing.JLabel PlaneBrandLbl;
+    private javax.swing.JTextField PlaneID;
+    private javax.swing.JLabel PlaneIDLbl;
+    private javax.swing.JTextField PlaneMaxCapacity;
+    private javax.swing.JLabel PlaneMaxCapacityLbl;
+    private javax.swing.JTextField PlaneModel;
+    private javax.swing.JLabel PlaneModelLbl;
+    private javax.swing.JScrollPane PlanesPane;
+    private javax.swing.JTable PlanesTable;
+    private javax.swing.JLabel PlusLbl;
+    private javax.swing.JButton RefreshFlights;
+    private javax.swing.JButton RefreshLocations;
+    private javax.swing.JButton RefreshPassengersFlights;
+    private javax.swing.JButton RefreshPlanes;
+    private javax.swing.JButton RegisterPassengerBtn;
+    private javax.swing.JComboBox<String> ScaleLocation;
+    private javax.swing.JLabel ScaleLocationDurationLbl;
+    private javax.swing.JComboBox<String> ScaleLocationHour;
+    private javax.swing.JLabel ScaleLocationLbl;
+    private javax.swing.JComboBox<String> ScaleLocationMinute;
+    private javax.swing.JLabel ScaleLocationSpace;
+    private javax.swing.JPanel SelectionPanel;
+    private javax.swing.JPanel ShowAllFlights;
+    private javax.swing.JPanel ShowAllLocations;
+    private javax.swing.JPanel ShowAllPassengers;
+    private javax.swing.JPanel ShowAllPlanes;
+    private javax.swing.JPanel ShowPassengerFlights;
+    private javax.swing.JLabel SpaceLbl;
+    private airport.PanelRound TopPanel;
+    private javax.swing.JPanel UpdatePassengerInfo;
+    private javax.swing.JButton UpdatePassengerInfoBtn;
     private javax.swing.JRadioButton administrator;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton10;
-    private javax.swing.JButton jButton11;
-    private javax.swing.JButton jButton12;
-    private javax.swing.JButton jButton13;
-    private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton4;
-    private javax.swing.JButton jButton5;
-    private javax.swing.JButton jButton6;
-    private javax.swing.JButton jButton7;
-    private javax.swing.JButton jButton8;
-    private javax.swing.JButton jButton9;
-    private javax.swing.JComboBox<String> jComboBox1;
-    private javax.swing.JComboBox<String> jComboBox2;
-    private javax.swing.JComboBox<String> jComboBox3;
-    private javax.swing.JComboBox<String> jComboBox4;
-    private javax.swing.JComboBox<String> jComboBox5;
-    private javax.swing.JComboBox<String> jComboBox6;
-    private javax.swing.JComboBox<String> jComboBox7;
-    private javax.swing.JComboBox<String> jComboBox8;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel10;
-    private javax.swing.JLabel jLabel11;
-    private javax.swing.JLabel jLabel12;
-    private javax.swing.JLabel jLabel13;
-    private javax.swing.JLabel jLabel14;
-    private javax.swing.JLabel jLabel15;
-    private javax.swing.JLabel jLabel16;
-    private javax.swing.JLabel jLabel17;
-    private javax.swing.JLabel jLabel18;
-    private javax.swing.JLabel jLabel19;
-    private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel20;
-    private javax.swing.JLabel jLabel21;
-    private javax.swing.JLabel jLabel22;
-    private javax.swing.JLabel jLabel23;
-    private javax.swing.JLabel jLabel24;
-    private javax.swing.JLabel jLabel25;
-    private javax.swing.JLabel jLabel26;
-    private javax.swing.JLabel jLabel27;
-    private javax.swing.JLabel jLabel28;
-    private javax.swing.JLabel jLabel29;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel30;
-    private javax.swing.JLabel jLabel31;
-    private javax.swing.JLabel jLabel32;
-    private javax.swing.JLabel jLabel33;
-    private javax.swing.JLabel jLabel34;
-    private javax.swing.JLabel jLabel35;
-    private javax.swing.JLabel jLabel36;
-    private javax.swing.JLabel jLabel37;
-    private javax.swing.JLabel jLabel38;
-    private javax.swing.JLabel jLabel39;
-    private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel40;
-    private javax.swing.JLabel jLabel41;
-    private javax.swing.JLabel jLabel42;
-    private javax.swing.JLabel jLabel43;
-    private javax.swing.JLabel jLabel44;
-    private javax.swing.JLabel jLabel45;
-    private javax.swing.JLabel jLabel46;
-    private javax.swing.JLabel jLabel47;
-    private javax.swing.JLabel jLabel48;
-    private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
-    private javax.swing.JLabel jLabel8;
-    private javax.swing.JLabel jLabel9;
-    private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel10;
-    private javax.swing.JPanel jPanel11;
-    private javax.swing.JPanel jPanel12;
-    private javax.swing.JPanel jPanel13;
-    private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel3;
-    private javax.swing.JPanel jPanel4;
-    private javax.swing.JPanel jPanel5;
-    private javax.swing.JPanel jPanel6;
-    private javax.swing.JPanel jPanel7;
-    private javax.swing.JPanel jPanel8;
-    private javax.swing.JPanel jPanel9;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JScrollPane jScrollPane4;
-    private javax.swing.JScrollPane jScrollPane5;
-    private javax.swing.JTabbedPane jTabbedPane1;
-    private javax.swing.JTable jTable1;
-    private javax.swing.JTable jTable2;
-    private javax.swing.JTable jTable3;
-    private javax.swing.JTable jTable4;
-    private javax.swing.JTable jTable5;
-    private javax.swing.JTextField jTextField1;
-    private javax.swing.JTextField jTextField10;
-    private javax.swing.JTextField jTextField11;
-    private javax.swing.JTextField jTextField12;
-    private javax.swing.JTextField jTextField13;
-    private javax.swing.JTextField jTextField14;
-    private javax.swing.JTextField jTextField15;
-    private javax.swing.JTextField jTextField16;
-    private javax.swing.JTextField jTextField17;
-    private javax.swing.JTextField jTextField18;
-    private javax.swing.JTextField jTextField19;
-    private javax.swing.JTextField jTextField2;
-    private javax.swing.JTextField jTextField20;
-    private javax.swing.JTextField jTextField21;
-    private javax.swing.JTextField jTextField22;
-    private javax.swing.JTextField jTextField23;
-    private javax.swing.JTextField jTextField24;
-    private javax.swing.JTextField jTextField25;
-    private javax.swing.JTextField jTextField26;
-    private javax.swing.JTextField jTextField27;
-    private javax.swing.JTextField jTextField28;
-    private javax.swing.JTextField jTextField3;
-    private javax.swing.JTextField jTextField4;
-    private javax.swing.JTextField jTextField5;
-    private javax.swing.JTextField jTextField6;
-    private javax.swing.JTextField jTextField7;
-    private javax.swing.JTextField jTextField8;
-    private javax.swing.JTextField jTextField9;
     private airport.PanelRound panelRound1;
-    private airport.PanelRound panelRound2;
-    private airport.PanelRound panelRound3;
     private javax.swing.JRadioButton user;
     private javax.swing.JComboBox<String> userSelect;
     // End of variables declaration//GEN-END:variables
